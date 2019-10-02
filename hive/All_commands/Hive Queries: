@@ -1,0 +1,141 @@
+Hive Queries:
+-------------
+GroupBy:
+--------
+select landmark, count(*) from bike_data_ondata group by landmark;
+Database:
+tickets_hive;
+Table:
+bike_data_ondata
+
+Having clause:
+select landmark, count(*) from bike_data_ondata group by landmark having sum(lat) > 10;
+select landmark, count(*) from bike_data_ondata group by landmark having dockcount > 10;
+Database:
+tickets_hive;
+Table:
+bike_data_ondata
+-- having is always followed by a group by.
+
+
+Joins:
+Creating Table1:
+CREATE EXTERNAL TABLE JOININGS_TABLE(ID INT,NAME STRING,AGE INT,ADDRESS STRING,SALARY DOUBLE);
+Creating Table2:
+CREATE EXTERNAL TABLE JOJO_TABLE (OID INT,DATESH STRING,CUSTOMER_ID INT,AMOUNT DOUBLE);
+
+Join:
+SELECT c.ID, c.NAME, c.AGE, o.AMOUNT FROM JOININGS_TABLE c JOIN JOJO_TABLE o ON (c.ID = o.CUSTOMER_ID);
+
+LeftOuter Join:
+SELECT c.ID, c.NAME, o.AMOUNT, o.DATESH FROM JOININGS_TABLE c LEFT OUTER JOIN JOJO_TABLE o ON (c.ID = o.CUSTOMER_ID);
+
+Right Outer Join:
+SELECT c.ID, c.NAME, o.AMOUNT, o.DATESH FROM JOININGS_TABLE c RIGHT OUTER JOIN JOJO_TABLE o ON (c.ID = o.CUSTOMER_ID);
+
+Full outer Join:
+SELECT c.ID, c.NAME, o.AMOUNT, o.DATESH FROM JOININGS_TABLE c FULL OUTER JOIN JOJO_TABLE o ON (c.ID = o.CUSTOMER_ID);
+
+
+
+CREATE TABLE AS SELECT(CTAS):
+
+Creating table using CTAS:
+CREATE TABLE myflightinfo2007 AS SELECT ID,NAME,AGE FROM JOININGS_TABLE WHERE (SALARY = 2000 AND ID = 1) AND (ADDRESS="Ahmedabad");
+
+COMMON TABLE EXPRESSION IN HIVE:
+USING WITH CLAUSE:
+create table s2 as with JOININGS_TABLE as ( select amount from JOJO_TABLE where amount = 3000) select * from JOININGS_TABLE;
+
+
+Creating a Table using avro file:
+
+Extracting schema from avrofile:
+java -jar /home/santhoshi/avro-tools-1.7.7.jar getschema /home/santhoshi/part-m-00000.avro  /home/santhoshi/avroforhive(in local unix which have java)
+
+mv avroforhive avroforhive.avsc
+-- Renaming the schemfile generated with .avsc
+
+putting HDFS:
+hadoop fs -put avroforhive.avsc /user/santhoshi/
+
+Creating hive table now:
+CREATE EXTERNAL TABLE avro_hive_table 
+                      ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.avro.AvroSerDe' 
+                      STORED as INPUTFORMAT 'org.apache.hadoop.hive.ql.io.avro.AvroContainerInputFormat' 
+                      OUTPUTFORMAT 'org.apache.hadoop.hive.ql.io.avro.AvroContainerOutputFormat' 
+                      LOCATION '/user/santhoshi/partitionary/' 
+                      TBLPROPERTIES ('avro.schema.url'='/user/santhoshi/avroforhive.avsc');
+
+Creating a Table for parquet:
+
+Creating from another tables data:
+CREATE TABLE parquet_version STORED AS PARQUET AS SELECT * FROM avro_hive_table;
+
+Creating table on parquet:
+drop table if exists parquet_test;
+CREATE EXTERNAL TABLE parquet_test(registration_dttm timestamp,id int,first_name string,last_name string,email string,gender string,ip_address string,cc string,country string,birthdate string,salary double,title string,comments string)ROW FORMAT SERDE 'org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe'STORED AS INPUTFORMAT 'org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat' OUTPUTFORMAT 'org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat'LOCATION 'hdfs://nn01.itversity.com:8020/user/santhoshi/hive/parkie_format/';
+select * from parquet_test limit 10;
+
+
+
+Creating table on json :
+
+Creating dataframe or reading data from spark:
+val employee_das = spark.read.format("json").option("header", "true").option("mode", "FAILFAST").option("inferSchema", "true").load("file:/home/santhoshi/students.json")
+employee_das: org.apache.spark.sql.DataFrame = [_id: bigint, name: string ... 1 more field]
+
+Creating a temptable:
+employee_das.createOrReplaceTempView("student_json")
+
+Creating a table from spark to hive :
+spark.sql(""" CREATE TABLE tickets_hive.students_hive AS select * from student_json limit 20 """)
+
+Renaming the waste columns:
+val studie = employee_das.withColumnRenamed("_id","id")
+
+We need to do this to get the column names and data types in hive:
+show create table students_hive;
+
+Creating  a external table :
+CREATE EXTERNAL TABLE json_serde_students (
+  id bigint, 
+  name string, 
+  scores array<struct<score:double,type:string>>)
+ROW FORMAT SERDE 'org.apache.hive.hcatalog.data.JsonSerDe'
+LOCATION '/user/santhoshi/hive/json_data/';
+
+Then writting the data on to the table which we have created:
+studie.write.json("/user/santhoshi/hive/json_data/")
+
+then queriying the table:
+select * from json_serde_students limit 10; 
+
+
+Creating a ORC table;
+
+CREATE TABLE orchetra_actual_table(
+                   boolean1 boolean, 
+                   byte1 tinyint, 
+                   short1 smallint, 
+                   int1 int, 
+                   long1 bigint, 
+                   float1 float, 
+                   double1 double, 
+                   bytes1 binary, 
+                   string1 string, 
+                   middle struct<list:array<struct<int1:int,string1:string>>>, 
+                   list array<struct<int1:int,string1:string>>, 
+                   `map` map<string,struct<int1:int,string1:string>>, 
+                   ts timestamp, 
+                   decimal1 decimal(38,10)) stored as orc tblproperties ("orc.compress"="NONE") ;
+
+
+load data inpath '/user/santhoshi/hive/orc_data/orc-file-11-format.orc' OVERWRITE INTO TABLE orchetra_actual_table;                   
+
+select count(*) from orchetra_actual_table;
+
+
+
+
+

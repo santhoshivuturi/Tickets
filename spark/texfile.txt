@@ -1,0 +1,1 @@
+When a log entry is invalid, I returned a null value instead of a Row instance. Before converting to dataframe, I filtered out these null values. But, still, I got the above problem. Finally, the error went away when I returned a Row with null values instead of a single null value.

@@ -1,0 +1,10 @@
+Flume:
+Streaming Tweets using twiiter:
+
+Step:1
+-- writting conf file for source sink and channel
+-- conf file name flume.conf in the folder of flume
+
+Step:3:
+flume-ng agent --conf conf --conf-file /home/santhoshi/flume.conf --conf /etc/flume/conf --name TwitterAgent -Dflume.root.logger=DEBUG.console
+-- --conf /etc/flume/conf this should be included to make sure the we log4j file

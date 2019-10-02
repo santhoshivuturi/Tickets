@@ -1,0 +1,199 @@
+spark-sql:
+spark.sql("SELECT 1 + 1").show()
+	-- We can do SQL in Spark and Python like above statement.
+	-- This above statement returns a DataFrame and we can execute that programmatically just like other transformation and this also follows lazy evaluation.
+	-- This is very powerful to spark because it is easy to write somethings on SQL than in Dataframes and API's
+	-- We can execute multiline query quite simply by passing multiline string into the function 
+spark.sql("""SELECT user_id, department, first_name FROM professors WHERE department IN(SELECT name FROM department WHERE created_date >= '2016-01-01')""")		
+	-- We can simply do this ins Scala or python.
+	-- The more power full thing is we can use SQL on Dataframes and Dataframe logic on SQL tables.
+spark.read.json("Users/kartikeyan/Desktop/Textbookie/Spark-The-Definitive-Guide-master/Data/flight-data/json/2015-summary.json").createOrReplaceTempView("some_sql_view") 
+	-- by doing this or writting the above statemnet we are loading a file and creating a Dataframe and then immediately are creating a TempTable to acess the DataFrame in SQL way 
+	-- Here we are spark format to read a Json file from a mention path.
+spark.sql(""" SELECT DEST_COUNTRY_NAME, sum(count) FROM some_sql_view GROUP BY DEST_COUNTRY_NAME""").where("DEST_COUNTRY_NAME like 'S%'").where("`sum(count)` > 10").count() 	
+	-- Here we are writting SQL query and making the changes to the data or the temptableview and then when we say count it is converted from SQL to DataFrame.
+./sbin/start-thriftserver.sh
+	-- This command will help us to run JDBC ODBC connection and this should be done in spark bin folder.
+	-- This script accepts all bin/spark-submit commands-line options to see all available options for configuring this thrift server we need to run 
+./sbin/start-thriftserver.sh --help
+	-- When we do this by default the server listens to localhost 100000. We can also override this through environmental variable or system properties.
+export HIVE_SERVER2_THRIFT_PORT=<listening-port>
+export HIVE_SERVER2_THRIFT_BIND_HOST=<listening-host>
+./sbin/start-thriftserver.sh \
+--master <master-uri> \
+...			
+	-- For environment configartion We need to use the above thing 
+/sbin/start-thriftserver.sh \
+--hiveconf hive.server2.thrift.port=<listening-port> \
+--hiveconf hive.server2.thrift.bind.host=<listening-host> \
+--master <master-uri>
+...
+	-- For system properties use the above thing.
+./bin/beeline
+	-- We are kick starting the beeline.
+beeline> !connect jdbc:hive2://localhost:10000
+	-- We can test the connection using the above thing.
+	-- When we do thi beeline will ask for Username and Password and we can simply type username on our machiner and blank password and this is for nin secure connection and for secure connection we need to go through other things.
+Catalog:
+	-- Highest level of abstraction in SparkSQL is in the catalog.The catalog is abstarction for the storage of metadata the data stored in our tables and as well as other helpful things like Database tables, function and views.
+org.apache.spark.sql.catalog.Catalog 
+	-- This catalogue is available in the above package and this also contains a number of helpful function for doing the things like databases functions tables and views.
+CREATE TABLE flighties (DEST_COUNTRY_NAME STRING, ORIGIN_COUNTRY_NAME STRING, count LONG)USING JSON OPTIONS (path '/home/santhoshi/test/Textbookie/Spark-The-Definitive-Guide-master/data/flight-data/json/2015-summary.json')
+	-- Here we are just creating a table and then using "Using Json Options" we are loading the file on which we want to create a table.
+	-- The Using syntax is important which we have used in the above example.If we don't mention the format spark will default to hive serde configaration.
+	-- This SerDe configartion make cause problem to future user because spark SerDe' are much slower thant the of spark native serialization.
+	-- When we want use hive we can simply use SAVE AS option to use it in hive.
+CREATE TABLE flighties_csv (DEST_COUNTRY_NAME STRING,ORIGIN_COUNTRY_NAME STRING COMMENT "remember, the US will be most prevalent",count LONG)USING csv OPTIONS (header true, path '/home/santhoshi/test/Textbookie/Spark-The-Definitive-Guide-master/data/flight-data/csv/2015-summary.csv')						-- We can add comments to the tables which will help other developers to understand what the table exactly about
+CREATE TABLE flights_from_select USING parquet AS SELECT * FROM flights;
+	-- We can also create tables by using the normal commands.
+CREATE TABLE partitioned_flighties USING parquet PARTITIONED BY (DEST_COUNTRY_NAME)AS SELECT DEST_COUNTRY_NAME, ORIGIN_COUNTRY_NAME, count FROM flights LIMIT 5	
+	-- Here we are using partition by for creating a table.
+CREATE EXTERNAL TABLE hive_flights (DEST_COUNTRY_NAME STRING, ORIGIN_COUNTRY_NAME STRING, count LONG)ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LOCATION '/home/santhoshi/test/Textbookie/Spark-The-Definitive-Guide-master/data/flight-data-hive/'
+	-- Here we are using hive to create a table in the SparkSQL.
+CREATE EXTERNAL TABLE hive_flighties_2 ROW FORMAT DELIMITED FIELDS TERMINATED BY ','LOCATION '/home/santhoshi/test/Textbookie/Spark-The-Definitive-Guide-master/data/flight-data-hive/' AS SELECT * FROM flights	
+	-- Here we are creating a table in another simple way .
+INSERT INTO flights_from_select SELECT DEST_COUNTRY_NAME, ORIGIN_COUNTRY_NAME, count FROM flights LIMIT 20	
+	-- Here we are inserting into tables.
+INSERT INTO partitioned_flights PARTITION (DEST_COUNTRY_NAME="UNITED STATES")SELECT count, ORIGIN_COUNTRY_NAME FROM flightsWHERE DEST_COUNTRY_NAME='UNITED STATES' LIMIT 12	
+	-- Another way if inserting into table.
+DESCRIBE TABLE flights_csv
+	-- Previous;y we have declared or wriiten some comments while creating the table and we will be able to view them in metadata using the above command.
+SHOW PARTITIONS partitioned_flights
+	-- We can see the partitioned schema for the data with the above commmand.
+REFRESH table partitioned_flights
+	-- Maintaining the tables metadata is important because that is when we will know if we are using the mostrecent set of data.
+	-- There are 2 ways to refersh the tables metadata REFERESH TABLE refershes all cached entries associated with the table If the table was cached previously it is gonna be caches lazily next time it is cached.
+MSCK REPAIR TABLE partitioned_flights
+	-- Another way of refershing the table is using the REPAIR TABLE command which refreshes the partition maintained in the catalogue or the given table.
+	-- This command focuses on collecting the new partition information an example might be writting the partition manually and the need of repair table accordinglly.
+DROP TABLE flights_csv;		
+	-- This command is used to drop the tables accordingly when not needed.When we drop a managed table both data and the table defination will be removed.
+DROP TABLE IF EXISTS flights_csv;
+	-- to check if the table exist and delete it we are gonna use the above command.
+	-- When we are dropping the unmanaged table the data will not be dropped but the table will be and we will no longer be able to refer the data with the same table name.
+CACHE TABLE flights
+	-- We can cache the table like we cache the dataframe
+UNCACHE TABLE FLIGHTS
+	-- We can uncache them by using the above command.
+CREATE VIEW just_usa_view AS SELECT * FROM flights WHERE dest_country_name = 'United States'							
+	-- Here we are creating a view for the table flights 
+CREATE TEMP VIEW just_usa_view_temp AS SELECT * FROM flights WHERE dest_country_name = 'United States'
+	-- We can also create temporary view and this can be done for the cuurent session and will not be register to any of the databases
+CREATE GLOBAL TEMP VIEW just_usa_global_view_temp AS SELECT * FROM flights WHERE dest_country_name = 'United States'	
+	-- Here we are creating a global tempview of the table.This create a view for the entire spark application temporarily and will be lapsed when we end the session .
+CREATE OR REPLACE TEMP VIEW just_usa_view_temp AS SELECT * FROM flights WHERE dest_country_name = 'United States'
+	-- Here we are overwritting the view if already exist.
+	-- We can overwrite both tempviews and regualr views.
+SELECT * FROM just_usa_view_temp
+	-- A view is effectively a tranfomation and spark will perform it at the time of querying.
+val flights = spark.read.format("json").load("/data/flight-data/json/2015-summary.json")val just_usa_df = flights.where("dest_country_name = 'United States'")just_usa_df.selectExpr("*").explain	
+	-- Here we are using the same view thing using dataframes and we can also say that the view is nothing but generating a dataframe from the existing dataframes.
+EXPLAIN SELECT * FROM just_usa_view
+	-- This will explain what happened on the view 
+EXPLAIN SELECT * FROM flights WHERE dest_country_name = 'United States'
+	-- We can say that the above both commands are same.		
+DROP VIEW IF EXISTS just_usa_view;
+	-- By using the above command we will be able to drop the views of a table.
+SHOW DATABASES
+	-- This will show all the databases present in the spark SQL
+CREATE DATABASE some_db
+	-- Here by doing this we are creating a Database.
+USE some_db
+	-- Here we are using the DB which we have created in the above statement.
+SHOW tables
+	-- When we do show tables on the databases it will show the tables if there are any in the database we are using.
+SELECT * FROM flights 
+	-- this will fail because we are in different databases and the flights which we are referring to will not be avaialble in the database which we have created
+SELECT * FROM default.flights
+	-- However to acess the tables whic are in the different databases can be referred from any other database.
+SELECT current_database()
+	-- this will say which database we will be using in the session.
+USE default;
+	-- We can switch back to default using the above command and switch back to the default DB.
+DROP DATABASE IF EXISTS some_db;
+	-- This will drop the Databse if exist 
+SELECT [ALL|DISTINCT] named_expression[, named_expression, ...]
+FROM relation[, relation, ...]
+[lateral_view[, lateral_view, ...]]
+[WHERE boolean_expression]
+[aggregation [HAVING boolean_expression]]
+[ORDER BY sort_expressions]
+[CLUSTER BY expressions]
+[DISTRIBUTE BY expressions]
+[SORT BY sort_expressions]
+[WINDOW named_window[, WINDOW named_window, ...]]
+[LIMIT num_rows]
+named_expression:
+: expression [AS alias]
+relation:
+| join_relation
+| (table_name|query|relation) [sample] [AS alias]
+: VALUES (expressions)[, (expressions), ...]
+[AS (column_name[, column_name, ...])]
+expressions:
+: expression[, expression, ...]
+sort_expressions:
+: expression [ASC|DESC][, expression [ASC|DESC], ...]
+	-- This are all the select statements and the layouts.
+SELECT CASE WHEN DEST_COUNTRY_NAME = 'UNITED STATES' THEN 1 WHEN DEST_COUNTRY_NAME = 'Egypt' THEN 0 ELSE -1 ENDFROM partitioned_flights	
+	-- we are using the case statemnet thats all 
+CREATE VIEW IF NOT EXISTS nested_data AS SELECT (DEST_COUNTRY_NAME, ORIGIN_COUNTRY_NAME) as country, count FROM flights				
+	-- this is how we create a nested view of a table or a data set.
+SELECT * FROM nested_data
+	-- We can query it and see what it look like 
+SELECT country.DEST_COUNTRY_NAME, count FROM nested_data	
+	-- We can also use individual columns in struct in order to see how it looks like but the only thing we need to use is (.)	dot syntax.
+SELECT country.*, count FROM nested_data
+	-- If we like we can also select all the subvalues from the struct by using the struct name and select all the sub columns although they aren't subcolumns but doing that way makes them doing anything them like we do to columns.
+SELECT country.*, count FROM nested_data
+	-- Like this 
+SELECT DEST_COUNTRY_NAME as new_name, collect_list(count) as flight_counts, collect_set(ORIGIN_COUNTRY_NAME) as origin_set FROM flights GROUP BY DEST_COUNTRY_NAME	
+	-- Here we are trying to create a list 
+SELECT DEST_COUNTRY_NAME, ARRAY(1, 2, 3) FROM flights
+	-- We can also create an array with in a columns.
+SELECT DEST_COUNTRY_NAME as new_name, collect_list(count)[0] FROM flights GROUP BY DEST_COUNTRY_NAME
+	-- We also query the list by using positions by using python like array query syntax.
+CREATE OR REPLACE TEMP VIEW flights_agg ASSELECT DEST_COUNTRY_NAME, collect_list(count) as collected_countsFROM flights GROUP BY DEST_COUNTRY_NAME	
+	-- we have created an array so that we can use explode function the same thing
+SELECT explode(collected_counts), DEST_COUNTRY_NAME FROM flights_agg
+	-- Now we are using the explode function and exploding 
+	-- Like in above statement we will also be able to convert the arrays into normal rows We can do this by using explode function 	
+SHOW FUNCTIONS
+	-- This will show all the function in the spark SQL. we can see list of all function in SQL.
+SHOW SYSTEM FUNCTIONS
+	-- By this we are more specifically saying spark which type of function system function or user function of type.
+SHOW USER FUNCTIONS
+	-- Here we are doing the exact opposite of above function. and here it will show all the default user functions.
+SHOW FUNCTIONS "s*";
+	-- If we want to see what are the functions that are all with S* we need use this function 
+SHOW FUNCTIONS LIKE "collect*";
+	-- We can also include like keyword even though it is not nessacary.
+DESCRIBE:
+	-- using the describe keyword we can know more about the function which we have see in the list 	
+def power3(number:Double):Double = number * number * number
+spark.udf.register("power3", power3(_:Double):Double)
+	-- The above is user defined function and we used it any where we want .
+SELECT count, power3(count) FROM flights
+	-- This is gonna resuly differently and according to the user defined function.
+	-- You can also register functions through the Hive CREATE TEMPORARY FUNCTION syntax
+SELECT dest_country_name FROM flights GROUP BY dest_country_name ORDER BY sum(count) DESC LIMIT 5
+	-- Here we are writting a normal query and that will give the below output.
+Output:
+ +-----------------+
+|dest_country_name |
++-----------------+
+| United states 	|
+| Canada 			|
+| Mexico			|
+| United Kingdom	|
+| Japan				|
++-----------------+			
+
+SELECT * FROM flights WHERE origin_country_name IN (SELECT dest_country_name FROM flightsGROUP BY dest_country_name ORDER BY sum(count) DESC LIMIT 5)		-- Here we are are placing the subquery as filter and check if the orginal country exist in the list.
+	-- This is query is uncorrelated because we didn;t use the output from outer scope.
+UDF:
+val add_n = udf((x: Integer, y: Integer) => x + y)
+myRange.withColumn("unique_id",add_n(lit(1), col("number").cast("int")))
+	-- This is an UDF and here we are defining how to add a new column with number i.e. continous number so that we cab get the numbers assigned to all the rows in the data frame
+SET spark.sql.shuffle.partitions=20
+	-- Here we are satting configuaration of SQL not in detail

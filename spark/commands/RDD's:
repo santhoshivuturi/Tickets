@@ -1,0 +1,375 @@
+RDD's:
+
+spark.sparkContext
+	-- We can acess spark context via above call. 
+Interoperating between Dataframes,Datasets and RDD's:
+	-- One of the easiest way to get RDD's is to get it from Datasets or Dataframes.We will see that when we are converting from DataSet[t] to an RDD we will the appropriate native type T back
+spark.range(500).rdd
+	-- Converts a Dataset[long] to an RDD[long]
+spark.range(10).rdd.toDF()
+	-- Creating a Dataframe from a RDD.
+val myCollection = "Spark The Definitive Guide : Big Data Processing Made Simple".split(" ")	
+	-- here we are assigning a line to a val myCollection and then splitting the line with tab space.
+val words = spark.sparkContext.parallelize(myCollection, 2)
+	-- Here we are parallelizing myCollection and saving the same on words.
+	-- To create a RDD for collection we will need to use parallelize method on sparkContext with in a spark session.
+	-- This turns a single node collection into a parallel collection. When creating a parallel collection we can specify the number of partition into which we would like to distribute the array In the above case we have created 2 partitions.
+words.setName("myWords")
+	-- An additional feature is that we can then name a RDD to show up in spark UI according to given name.
+words.name
+	-- When we do this it is gonna show the name which we have assigned to that RDD.
+spark.sparkContext.textFile("Users/kartikeyan/Desktop/textfilekari")
+	-- We are just reading textfile as RDD. and this RDD contains each line which file we have loaded as eas record in the RDD.
+	-- Alternatively we can also read the data in a way that each textfile would become a single record.
+	-- The use case here would be where each file is a file which consist of a large Json object or some document that we will opreate as an individual.
+spark.sparkContext.wholeTextFiles("/some/path/withTextFiles")
+	-- This command will read all the text file which are present in that path and will considere the whole one text file as an record.
+	-- In this type of RDD's name of the file would be the first object and all the thing which are in the file would be second string.
+words.distinct().count()
+	-- Distinct method call will remove duplicates in a RDD.
+def startsWithS(individual:String) = {
+individual.startsWith("S")
+}
+	-- Here we are defining a function to filter out things starts with "S"
+words.filter(word => startsWithS(word)).collect()
+	-- We are using that function in filter.	
+	-- Filter is somthing which is very similar to that fo the where clause in SQl. We can look through the RDD and see which matche sour predicate function.
+	-- The important thing is that we need to make sure that the function returns a booelan value so that we can pass through the filter and the input would be whatever the row in the RDD which we are passing.
+	-- In the above example we are filtering out the words which are starting with "S"
+	-- In the result of the filter and function together its gives spark and simple.
+val words2 = words.map(word => (word, word(0), word.startsWith("S")))
+	-- Mapping again is the same operation which we have did for the Datasets it is similar.
+	-- we specify a function that return the value that we want given the correct input and then we apply that record by record
+	-- Similar to the above example we are mapping word to word with which the word starts with "S"
+	-- By this we will be creating a tuple which have 3 things (word,starting of the word letter, boolean value)
+	-- So we will be having something similar to this:
+Array[(String, Char, Boolean)] = Array((Spark,S,true), (The,T,false), (Definitive,D,false), (Guide,G,false), (:,:,false), (Big,B,false), (Data,D,false), (Processing,P,false), (Made,M,false), (Simple,S,true))	
+val bany = words2.filter(record => record._3).take(5)
+	-- so as we all know to take out the boolean values which we want we need to use filter and we here we will be only filter based on the boolean which is present in the 3rd place of the tuple
+	-- suppose for example we have a tuple  (Simple,S,true) simple that is the first place of the tuple is represented as _1 and s the second place of the tuple will be represented as _2 and third which is boolean value in the tuple will be represented as _3 and we will only be able to refer the elements in tuple by saying _1 ,_2,_3
+	-- when we are saying record => record_3 we are refereing the booelan value in that tuple and that would be _3 and filtering out the all remaning tuples bases on the values of 3 
+	-- When we saw the result in the above Words2 we see that entire thing is only having 2 tuples which are having to values and when we apply a filter that is only gonna return the true values.
+	-- Simple we can say filter is something which will give the output which will true as boolean value
+bany.collect
+	-- as we assigned the variable to the filtered out values that will have  Array[(String, Char, Boolean)] = Array((Spark,S,true), (Simple,S,true))
+words.flatMap(_.toSeq).take(5)
+words.flatMap(word => word.toSeq).take(5)
+	-- The above both word => word and _ does the same thing.
+	-- So flat map is extension to the map function which we have used above.sometimes each current row should return multiple rows instead. If we have group of words and we want to split the every word into a single letter (or) a charcter wr don't need to manually manpulate it flatmap does that for us.
+Output:
+	Array[Char] = Array(S, p, a, r, k, T, h, e, D, e)
+words.sortBy(word => word.length() * -1).take(2)
+words.sortBy(_.length() * -1).take(2)	
+	-- Here we are sorting the RDD with the help of sort method and any sortings in RDD will be done in sorting method.
+	-- So in the above example we are iterating through every word which is present in the word and then sorting the each word with the lenght of the word 
+Output:
+	Array[String] = Array(Definitive, Processing, Simple, Spark, Guide, Data, Made, The, Big, :)
+val fiftyFiftySplit = words.randomSplit(Array[Double](0.5, 0.5))
+	-- We can also randomly split an RDD into an Array of RDDs by using the randomSplit method, which accepts an Array of weights and a random seed
+Actions: 
+	-- We know what are actions and we ahve used them with Datasets and Dataframes and we know if we want to kick off our transformation done on RDD we take an action.
+spark.sparkContext.parallelize(1 to 20).reduce(_ + _) // 210
+	-- here we are using Reduce and with reduce we can reduce any kind of RDD into one value 
+	-- In this example first we are parallelizing the collection and then we are using a reduce function on the parallelize and in that reduce we are adding the every value in the collection which we just parlellised.
+def wordLengthReducer(leftWord:String, rightWord:String): String = {
+if (leftWord.length > rightWord.length)
+return leftWord
+else
+return rightWord
+}
+	-- Here we are wriiting a function and declaring 2 variable leftword and rightwords and both of them as string and we are also defining that this gonna return a string
+	-- Here we are also wriiting a if fucntion and comparing the left and right variable and saying if leftword.length greater than the right word then return left word or else right.
+	-- 	wordLengthReducer is name of the function and we will be refering the passing the function through any method referring to this as the name of the function 
+	-- So we will be doing this on Array[String] = Array(Spark, The, Definitive, Guide, :, Big, Data, Processing, Made, Simple)
+words.reduce(wordLengthReducer)
+	-- we are passing the function which we have defined in the reduce method of the RDD.
+	-- When we do this it is gonna return the highest lenght word 
+Output:
+res25: String = Definitive
+words.count()
+	-- This will count the number of row in a RDD.
+val confidence = 0.95
+val timeoutMilliseconds = 400
+	-- Here we are giving some values to these varaible so that we can use them some where else.
+words.countApprox(timeoutMilliseconds, confidence)
+	-- Here we are using the count approx function and then we are passing the varaible which we have decalred through the countApprox.
+	-- Even though when we say that countApprox it is weird but the method is very sophsticated.
+	-- This is nothing but the approximation of the count method which we have just used but this must be executed with in the timeout and result inaccurate count which the time is out.
+	-- The confidence in this the probability the error bounds of the result will contain a true value.that is countApprox is called repeatedly with confidence 0.9 e would expect the 90% of result contain the true count. Th confidence must be in range 0-1 or else and exception will be thrown.
+words.countApproxDistinct(0.05)
+	-- There are two implementations of this, both based on streamlib’s implementation of “HyperLogLog in
+Practice: Algorithmic Engineering of a State-of-the-Art Cardinality Estimation Algorithm.” In the first implementation, the argument we pass into the function is the relative accuracy. Smallervalues create counters that require more space. The value must be greater than 0.000017:			
+	-- With the other implementation you have a bit more control; you specify the relative accuracy based on two parameters: one for “regular” data and another for a sparse representation.
+	-- The two arguments are p and sp where p is precision and sp is sparse precision. The relative accuracy is approximately 1.054 / sqrt(2 ). Setting a nonzero (sp > p) can reduce the memory consumption and increase accuracy when the cardinality is small. Both values are integers:å	
+words.countApproxDistinct(4, 10)
+words.countByValue()
+	-- The method counts the number of values in the given RDD.However this will be done by loading the result set into the memory of the driver. We should use theis method onlt when we know the number of rows are low and there are only little distinct value because ot load everything into the memory.
+words.countByValueApprox(1000, 0.95)
+	-- This does the same thing as the previous function, but it does so as an approximation. This must execute within the specified timeout (first parameter) (and can return incomplete results if it exceeds the timeout).			
+	-- The confidence is the probability that the error bounds of the result will contain the true value. Thatis, if countApprox were called repeatedly with confidence 0.9, we would expect 90% of the results to contain the true count. The confidence must be in the range [0,1], or an exception will be thrown
+words.first()
+	-- Will returns the first value in the Dataset.
+spark.sparkContext.parallelize(1 to 20).max()
+spark.sparkContext.parallelize(1 to 20).min()
+	-- Will return the max and min values of the dataset and in the above we can say collection which is parallelized.
+words.take(5)
+	-- take and its derivative method takes number of value in the RDD.
+	-- This works by first scanning on the partition and then using the result for the partition to estimate the number of additional partition which need to satisfy the limit
+words.takeOrdered(5)
+	-- opposit to top
+words.top(5)
+	-- Top 5 will take the top 5 rows of the RDD
+val withReplacement = true
+val numberToTake = 6
+val randomSeed = 100L
+ 	-- Declaring varaiable assigned with values and that is possibily used in the next steps to pass through something
+words.takeSample(withReplacement, numberToTake, randomSeed)	
+	-- We can use this takeSample to specify the a fixed random sample from the RDD.
+	-- We should specify weather this should be done with replacement the numbe of values as well as the random speed 
+words.saveAsTextFile("file:/tmp/bookTitle")
+	-- We can also save the dataframe which we have created into a textfile and in the mentioned path.
+	-- With Rdds we will not be able to save to a data source in the conventinal sense. we must iterate to partition inorder to save the content of each partition to an external database.
+	-- This is lowlwvwl approach that reveal the underlying operation that is being performed in Struvctured API's.Spark will take each partition and write that out to a destination.
+import org.apache.hadoop.io.compress.BZip2Codec
+	 -- Here we are importing a statement which will have the function or something which we want to implement
+words.saveAsTextFile("file:/tmp/bookTitleCompressed", classOf[BZip2Codec])
+	-- Inorder to implement a commpression codec in RDD we have to import it from Hadoop.
+words.saveAsObjectFile("/tmp/my/sequenceFilePath")
+	-- Here we are saving words as a sequential file.
+	-- Spark orginally grow out of hadoop ecosystem.so it has a fairly tight integrating with hadoop system. A sequence is a flat file which consist of binary keys value pairs Its is extensively used in Mapreduce as input/output formats.
+	-- Spark can write to sequenceFiles using the saveAsObjectFile method or by explicitly writing key–value pairs which we will see later on.
+words.cache()
+	-- We can either cache or persist a RDD. 
+	-- We can name it if we use the setName function that we referenced previously in the examples.
+org.apache.spark.storage.StorageLevel
+	-- We are importing this statement to implement the desired function.
+	-- We can specify a storage level as any of the storage levels in the singleton object:
+	-- which are combinations of memory only; disk only and separately, off heap.		
+words.getStorageLevel
+	-- This will return the storage level we are in 
+spark.sparkContext.setCheckpointDir("/some/path/for/checkpointing")
+words.checkpoint()
+	-- checkpointing the is the one feature that is not available in Dataframes.
+	-- Checkpointing is saving the RDD to the disk so the future reference to this RDD point to those intermediate partition on the disk rather recomputing the RDD from the original source.
+	-- this similar to cahing but the only thing this will not be stored on the memory instead it will be stored on the	disk.This can be helpful when performing iterative computation, similar to the use cases for caching:
+	-- Now, when we reference this RDD, it will derive from the checkpoint instead of the source data. This can be a helpful optimization.
+words.pipe("wc -l").collect()
+	-- The pipe method is one of the sparks more intersting method.with pipe you can return an RDD created by piping elements to forked external process.
+	-- The resulting RDD is computed by xecuting the given process once per partition. all elements of each input partition are written to a process's stdin as line of input sperated by a new line of stdoutThe resulting partition consists of theprocess’s stdout output, with each line of stdout resulting in one element of the output partition. Aprocess is invoked even for empty partitions.The print behavior can be customized by providing two functions.We can use a simple example and pipe each partition to the command wc. Each row will be passed inas a new line, so if we perform a line count, we will get the number of lines, one per partition.
+words.map(word => (word.toLowerCase, 1))
+	-- Here we are using same RDD words and then using iteraton over the RDD and are converting it to lowercase.
+val keyword = words.keyBy(word => word.toLowerCase.toSeq(0).toString)
+	-- In the previous example we saw how to create a key. However we can use the same keyBy function to acheive the same result by specifying a function that creates a key from our current value.
+	-- In this example we are keying with first letter in the word Spark then keeps the value as the complete record in the RDD.
+	-- So here we are just explaning or specifing what spark should consider as key and once we specify that the spark will do the remaining by assigning the actual records from which we have picked key and assign them as values.	
+keyword.mapValues(word => word.toUpperCase).collect()
+	-- now that we have key value pairs we should begin to manipulate the pairRDD's.If we have a tuple spark will assume the first element as key and second as value. So in this format we can explicitly choose to map over values and ingnore the individual keys 
+	-- In the above Example we should understand that we are changing the values to lowercase by using a function called as Mapvalues and only values are gonna change
+	-- One more important thing to understand is that if we have only 2 element in a tuple spark will automatically consider this as key value pair RDD.
+Output:
+Array[(String, String)] = Array((s,SPARK), (t,THE), (d,DEFINITIVE), (g,GUIDE), (:,:), (b,BIG), (d,DATA), (p,PROCESSING), (m,MADE), (s,SIMPLE))			
+	-- Values are converted to UpperCase.
+keyword.flatMapValues(word => word.toUpperCase).collect()
+	-- Here we are performing falt map on only the values of the tuple or pairRDD according to spark.We can flat map over the rows as we saw previously .
+Output:
+Array[(String, Char)] = Array((s,S), (s,P), (s,A), (s,R), (s,K), (t,T), (t,H), (t,E), (d,D), (d,E), (d,F), (d,I), (d,N), (d,I), (d,T), (d,I), (d,V), (d,E), (g,G), (g,U), (g,I), (g,D), (g,E), (:,:), (b,B), (b,I), (b,G), (d,D), (d,A), (d,T), (d,A), (p,P), (p,R), (p,O), (p,C), (p,E), (p,S), (p,S), (p,I), (p,N), (p,G), (m,M), (m,A), (m,D), (m,E), (s,S), (s,I), (s,M), (s,P), (s,L), (s,E))		
+keyword.keys.collect()
+keyword.values.collect()
+	-- We can simply call the above as extracting key value pairs. By using above methods we can extract keys and values seperately.
+Output:
+Array[String] = Array(Spark, The, Definitive, Guide, :, Big, Data, Processing, Made, Simple)
+keyword.lookup("s")
+	-- One intersting task we can be able to on RDD is to lookup the result for particulat key.we lookup “s”, we are going to get both values associated with that—“Spark” and “Simple” 		
+val distinctChars = words.flatMap(word => word.toLowerCase.toSeq).distinct.collect()
+	-- Here we are using a RDD and then doing a flatMap on the RDD and then changing everything into lower case and then doing a distnct on lowercased RDD and then performing a collect and then assigning that to a variable which we may use later on  
+import scala.util.Random
+	-- Here we are using a import statemnet to implement the Random function.
+val sampleMap = distinctChars.map(c => (c, new Random().nextDouble())).toMap
+	-- Then we are randoming it 
+words.map(word => (word.toLowerCase.toSeq(0), word)).sampleByKey(true, sampleMap, 6L).collect()
+	-- Then are sampling it.
+	-- There are 2 ways to sample the RDD wuth set of keys. We can do it via approximation or exactly.
+	-- Both operations can do so with or without replacement as well as sampling by a fraction by a given key Thsis is done via simple random sampling which is done with one pass over RDD.
+	-- which produces a sample of size that’s approximately equal to the sum of math.ceil(numItems * samplingRate) over all key values:
+words.map(word => (word.toLowerCase.toSeq(0), word)).sampleByKeyExact(true, sampleMap, 6L).collect()
+	-- This method differs from sampleByKey in that you make additional passes over the RDD to create a sample size that’s exactly equal to the sum of math.ceil(numItems * samplingRate) over all key values with a 99.99% confidence.
+	-- When sampling without replacement, you need one additional pass over the RDD to guarantee sample size; when sampling with replacement, you need two additional passes.
+val chars = words.flatMap(word => word.toLowerCase.toSeq)
+	-- Here we are doing the flat map on word and then we are converting them in to lowercase and toSeq
+val KVcharacters = chars.map(letter => (letter, 1))
+	-- Then we are converting the above letters which we have generated by flatmpping and assigning them to a varaible and then assigning the every letter with "1" so now this is gonna become tuple or simply we can say key value pairs
+def maxFunc(left:Int, right:Int) = math.max(left, right)
+	-- then we are defining a function 
+def addFunc(left:Int, right:Int) = left + right
+	-- Then we are defining a function
+val nums = sc.parallelize(1 to 30, 5)
+	-- Same old story
+val timeout = 1000L //milliseconds
+	-- We are assigning this to a varaible
+val confidence = 0.95
+	-- assginging this to varaible
+KVcharacters.countByKey()
+	-- Then we are doing a count by key operation on the above thing we have generated
+KVcharacters.countByKeyApprox(timeout, confidence)
+	-- This is we are doing a approximation.
+KVcharacters.groupByKey().map(row => (row._1, row._2.reduce(addFunc))).collect()
+	-- Here we are doing a groupBy key opeartion and see how it works.
+	-- groupByKey followed by a map is a wrong way to approach a problem. The fundamental issue here is that each executor must hold all values for given key in the memory before applying the function to them. Okay then why is this problematic?
+	-- If we have a massive key skew some partitions might be completely overloaded with aton of values for a given key and we will get out of memory errors.
+	-- This abviously will not have problem with current dataset but when we are working on a bigger scale and this is not compulsory to happen but there is a chance of this happening.
+	-- There are usescase where groupByKey will make sense. If we know the value size of the key and also to know they will fit into the given executor memory.
+	-- It is preferred to know all this thing before we gonna do anything with reduceBy and groupBy.
+KVcharacters.reduceByKey(addFunc).collect()KVcharacters.reduceByKey(addFunc).collect()
+	-- Because we are performing a simple count a much more stable approach is to perfrom flatmap and then perform a map to map each letter instance to the number one and then perform reduceByKey with a summation function in order to collect back the Array.
+	-- This implementation is much more stable because reduce happens with in the each partition and doesn't need to put everything inside the memory additionally there is no incurred shuffle during this operation everything happens at each worker individually before performing a final reduce.
+	-- This enchances the speed at which we perform a operation as well as stability of the operation	
+Output:
+	 Array[(Char, Int)] = Array((d,4), (p,3), (t,3), (b,1), (h,1), (n,2), (f,1), (v,1), (:,1), (r,2), (l,1), (s,4), (e,7), (a,4), (i,7), (k,1), (u,1), (o,1), (g,3), (m,2), (c,1))
+	 -- This reduceByKey will return RDD of a group and sequence of elements that are not guarnteed to have an order. This will make sense only when we don't want any order is want a normal order then this inappropriate.
+nums.aggregate(0)(maxFunc, addFunc)
+	-- Another function is aggregate. This function requires a null and a start value and then requires us to mention 2 different functions.
+	-- The first aggregate with in the partitions and the second aggregates across the partitions. The start value will be used at both aggregation levels
+	-- aggregation does have some performance issue because this performs final aggregation on driver.If the output of the executor is high then they take down the driver with out of memoery exception.
+	-- There is another thing called as tree aggregation this does the same thing as aggregation but does it in a different way. So this treeAggregate pushesdown some of sub aggregations before performing the final aggregation.Having multiple level will help us from getting the outofmemory exception.
+	-- This tree base thing are certianly introduced to get stability with th operations.
+val depth = 3
+nums.treeAggregate(0)(maxFunc, addFunc, depth)
+	-- this is how we write the treeAggregate.
+KVcharacters.aggregateByKey(0)(addFunc, maxFunc).collect()
+	-- Here we are using aggregate by key. Instead of doing it by partition by partition it does based on the key.
+	-- The start value is similar to that of the aggregate and treeAggregate.			 
+val valToCombiner = (value:Int) => List(value)
+val mergeValuesFunc = (vals:List[Int], valToAppend:Int) => valToAppend :: vals
+val mergeCombinerFunc = (vals1:List[Int], vals2:List[Int]) => vals1 ::: vals2
+	-- Here we are assigning everything to val's
+val outputPartitions = 6
+	-- We are setting the output partitions as 6.
+KVcharacters.combineByKey(valToCombiner,mergeValuesFunc,mergeCombinerFunc,outputPartitions).collect()		 
+ 	-- Here we are performing combineByKey operation.
+ 	-- Combiner operated on given key and merges the value according to function It then goes an merges different output from combiners and gives us the result.
+ 	-- We can set the number of partitioner number as custome partitioner as well.
+KVcharacters.foldByKey(0)(addFunc).collect()
+ 	-- foldBykey merges the value foreach key using a associative function and a neutral zerovalue. Which can be added to result the arbitary number of times and must not change the results 
+import scala.util.Random
+	-- Here we are importing a statment to implement that function.
+val distinctChars = words.flatMap(word => word.toLowerCase.toSeq).distinct
+	--We are doing the same thing 
+val charRDD = distinctChars.map(c => (c, new Random().nextDouble()))
+val charRDD2 = distinctChars.map(c => (c, new Random().nextDouble()))
+val charRDD3 = distinctChars.map(c => (c, new Random().nextDouble()))
+	-- Out of that we are creating 3 different RDD's
+charRDD.cogroup(charRDD2, charRDD3).take(5)		 
+	-- Cogroup gives us ability to group 3 pairedRDD's in scala and 2 in python.This joins the given value by key.this is in simple is a grouped bases join on RDD's
+	-- While doing this we can set number of output partitions or a custompartitioning function to control exactly how this data is distributed accross the cluster.
+	-- The result with group with key on oneside and relvant key on the other side.
+val keyedChars = distinctChars.map(c => (c, new Random().nextDouble()))
+	-- Here we are doing the same onld thing
+val outputPartitions = 10
+	-- Here we are metining the number of output patitioners
+KVcharacters.join(keyedChars).count()
+	-- Here are peforming an inner join on RDD's
+KVcharacters.join(keyedChars, outputPartitions).count()		
+	-- Here we are also mentionong the number of output partioners and in this case they would be 10
+val numRange = sc.parallelize(0 to 9, 2)
+	-- here we are taking a collection and parllelizing that and the mentioning the partitions as 2 and then assigning it to a varaible so that we can use it
+words.zip(numRange).collect()	
+	-- Here we are taking 2 dataframes and performing a ZIP on both of them.Zips alloes us to ZIP 2 RDD's where the lenght and the number of partitions are same.
+	-- This creates a PairRDD which will have same number of elements as well as same numbe of partitions.
+Output:
+[('Spark', 0),
+('The', 1),
+('Definitive', 2),
+('Guide', 3),
+(':', 4),
+('Big', 5),
+('Data', 6),
+('Processing', 7),
+('Made', 8),
+('Simple', 9)]		
+Controlling Partitions:
+	-- with RDD's we can control exactly and physically how the data is distributed across the cluster.Theese are almost similar to structured API's but here key comes into the picture.
+	-- and additionally ability to specify the partitions.
+words.coalesce(1).getNumPartitions 
+	-- Coalesce effectively collapses the partition on the one executor which creating shuffle
+	-- For instance lets consider that Our RDD is currently 2 partitions we can collapse that to one partition using coalesce without bring any shuffle in the data.
+words.repartition(10)
+	-- Repartition allows us to repartition that data like we want but this is gonna cause a shuffle across the nodes in the process.Increasing the number of partition may cause parallelism while performing map and filter operations.
+Repartition and sort with in partition 			
+	-- This operations gives us ability to repartition as well as specify the ordering of each one of those output partitions.
+CustomPartitioning:
+	-- This ability is one of the reasons we will use RDD's. CustomPartitioners are not available for structure API's because they don't really have counter logical part
+	-- They are lowlevel implementation details that can give a significant effect on weather our jobs run sucessfully.
+	-- The cononical example to motivate customer partitoner for this operation is pagerank.where by which we seek to control the layout of the data on the cluster and avoid shuffles.
+	-- In our shopping dataset this mean partitioning by customerID and in a simple way goal of custompartitoner is even distribution of dataover over the cluster.
+	-- If we are gonna use customer partitioner we need to to drop down to RDD's and then perform custompartitioning and then switch back to RDD's. 
+	-- To perform custom partitioning you need to implement our own class that extends partitioner.
+	-- We need do this only we have enough knowledge in the process and all the details about the cluster ad process if we are just looking for partitioning on a value or set of values it worth doing it in dataframe API's
+val df = spark.read.option("header", "true").option("inferSchema", "true").csv("/Users/kartikeyan/Desktop/Textbookie/Spark-The-Definitive-Guide-master/data/retail-data/all/online-retail-dataset.csv")
+	-- Here we are jsut reading file into a Dataframe.
+val rdd = df.coalesce(10).rdd
+	-- Here we are performing coalesce and changing into a RDD. Spark has 2 API's that we can leverage of in RDD API's HashPartitioner for descret values and RangePartitioner.
+	-- These 2 work for discreate as well as countinous values 
+import org.apache.spark.HashPartitioner
+rdd.map(r => r(6)).take(5).foreach(println)
+val keyedRDD = rdd.keyBy(row => row(6).asInstanceOf[Int].toDouble)
+keyedRDD.partitionBy(new HashPartitioner(10)).take(10)
+	-- Here we are usinh hashpartitioner. although this hash and range are usefull they are fairly rudmentary.At times we will need to perform lowlevel partitioning because we are working with large amount of data and large keyskew.
+	-- Keyskew meand some keys have many many more values then other keys.
+	-- We will need to break this keys as mush as possible to increase parallelism and also to avoid getting outofmemory exception.
+	-- One instance might be we need to partition more keys if and only if key matches a certain format. For instance we might know that there are 2 customers in our dataset who crash our analysis and we need to break them up further than one customer ID.In fact there both are so skewed that they need to be operated seperately where as all others can be lumped into large groups.
+	-- This a caricatured example but there is a chance that we see this king of thing in the data.
+import org.apache.spark.Partitioner
+class DomainPartitioner extends Partitioner {
+def numPartitions = 3
+def getPartition(key: Any): Int = {
+val customerId = key.asInstanceOf[Double].toInt
+if (customerId == 17850.0 || customerId == 12583.0) {
+return 0
+} else {
+return new java.util.Random().nextInt(2) + 1
+}
+}
+}
+keyedRDD.partitionBy(new DomainPartitioner).map(_._1).glom().map(_.toSet.toSeq.length).take(5)				
+	-- After we run this we see count of results in each partion.The second 2 number will vary because we are distrubuting them randomly.
+CustomerSerialization:
+	-- This is nothing but kyroserialisation. Any object that we hope to parllalize must be serialiazable.
+class SomeClass extends Serializable {
+var someValue = 0
+def setSomeValue(i:Int) = {
+someValue = i
+this
+}
+}
+sc.parallelize(1 to 10).map(num => new SomeClass().setSomeValue(num))
+	-- the default serialisation will be quite slow.Spark can use kyro libraries to serialize the objects very quickly.Kyro is siginificantly faster and more compact than java serilization but doesn;y support all serializable types and askes to register the classes we will use in the program in advance for best performance.
+	-- We can use kyro by initializing the job with sparlConf and setting the value spark.serializer to org.apache.spark.serializer.KryoSerializer
+	-- this setting configure the serializer used for shuffling data between work nodes and serializing RDD's to disk.
+	-- the only reason the kyro is not default because the custom registration requirement but it is recommened to use in any operations which have network intensive operations.
+	-- Since Spark 2.0.0, we internally use Kryo serializer when shuffling RDDs with simple types, arrays of simple types, or string type.	
+	-- Spark automatically includes Kryo serializers for the many commonly used core Scala classes covered in the AllScalaRegistrar from the Twitter chill library.
+	-- To register your own custom classes with Kryo, use the registerKryoClasses method:
+val conf = new SparkConf().setMaster(...).setAppName(...)
+conf.registerKryoClasses(Array(classOf[MyClass1], classOf[MyClass2]))
+val sc = new SparkContext(conf)
+
+val myCollection = "Spark The Definitive Guide : Big Data Processing Made Simple".split(" ")
+	-- For example we have list of values or words.
+val words = spark.sparkContext.parallelize(myCollection, 2)
+	-- Same old same old
+	-- and we want to sumplement the list of words with other information which we have which is many many giga or kilo bytes. This techincallya rightjoin when we speak in SQL terms.
+val supplementalData = Map("Spark" -> 1000, "Definitive" -> 200,"Big" -> -300, "Simple" -> 100)			
+	-- Here are we are taking some data and assigning it to a varaible.
+	-- we can brodcast this structure across the spark and reference it by using supportBroadCast.This value is immutable and is lazily replicated across all nodes in the cluster when we trigger a action.
+val suppBroadcast = spark.sparkContext.broadcast(supplementalData)
+	-- We reference this varaiable by a value method which returns the exact value that we has earlier.This method is accesiable for serialized functions without having to serialize data .
+	-- This saves us great deal of serializing data as spark can transfer data more efficiently around the cluster using broadcasts.
+suppBroadcast.value
+	-- now we could transform the RDD using this value. In this instance we will create a key-value pair ccroding to value we might have to map. if we lack value we simple replace it with 0.
+words.map(word => (word, suppBroadcast.value.getOrElse(word, 0))).sortBy(wordPair => wordPair._2).collect()		
+	-- We are using broacast value in a RDD.
+Output:[('Big', -300),
+('The', 0),
+...
+('Definitive', 200),
+('Spark', 1000)]

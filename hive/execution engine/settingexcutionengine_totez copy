@@ -1,0 +1,6 @@
+To check what is the execution engine for hive :
+set hive.execution.engine;
+
+To change Hive execution engine to tez:
+set hive.execution.engine=tez;
+

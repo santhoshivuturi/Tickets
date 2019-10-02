@@ -1,0 +1,11 @@
+job.properties:
+
+oozie.libpath=hdfs://nn01.itversity.com:8020/user/oozie/share/lib/lib_20180803155221/sqoop,hdfs://nn01.itversity.com:8020/user/oozie/share/lib/lib_20180803155221/hive/
+oozie.wf.application.path=hdfs://nn01.itversity.com:8020/user/santhoshi/oozie/workflows/wf.xml
+oozie.use.system.libpath=true
+queue_Name=default
+oozie.sqoop_libpath=hdfs://nn01.itversity.com:8020/user/oozie/share/lib/lib_20180803155221/sqoop
+user.name=santhoshi
+jobTracker=rm01.itversity.com:8050
+mapreduce.job.user.name=santhoshi
+nameNode=hdfs://nn01.itversity.com:8020

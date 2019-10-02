@@ -1,0 +1,26 @@
+Using pig with hive using HCatalog:
+Loading a table present in hive using hcatalog and then manipulationg it.
+
+Step:1
+pig -useHCatalog
+-- We should load the pig like above using Hcatalog
+
+Step:2
+A = LOAD 'santhoshivuturi.sqoop_workspace' USING org.apache.hive.hcatalog.pig.HCatLoader();
+-- This is how we load a table from hive to pig using and refering to the database and table name and then we will be using HCatloader.
+
+Step:3
+describe A;
+-- This will give schema
+
+Step:4
+B = foreach A generate id;
+-- This will only generate ID from the hive table which we have loaded into pig.
+
+step:5
+STORE B INTO 'santhoshivuturi.A' USING org.apache.hive.hcatalog.pig.HCatStorer();
+-- After doing the required manipulations in pig then we are usinh hcatstorer and then storing back the data into hive table 
+-- Before this we need to create a table in hive using the same schema which the variable have in pig.
+
+
+

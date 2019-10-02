@@ -1,0 +1,677 @@
+DataSource API's:
+DataFrameReader.format(...).option("key", "value").schema(...).load()
+	-- This is a core structure of reading a datasourcer
+	-- We will use this format to read from all of our DataSources. Format is optionl cause by default spark reads everything in parquet format.
+	-- (key,values) are somthing which will help the spark to understand how we wann read our data.
+	-- Schema is also option we can either take the schem available in the data or we can define our own schema 
+Spark.read:
+	-- This is something we will use to read the data from read stream using SparkSession.
+After DataFrame reader we specify several option like:
+	-- format
+	-- schema
+	-- readmode 
+	-- series of othe options 
+spark.read.format("csv").option("mode", "FAILFAST").option("inferSchema", "true").option("path", "path/to/file(s)").schema(someSchema).load()			
+	-- here is the example of how we are doing that . There are variety of ways in which we can use options.
+DataFrameWriter.format(...).option(...).partitionBy(...).bucketBy(...).sortBy(...).save()
+	-- Core structure of writting API is as above 
+	-- We use this format to write to all of our datasources. format is optional because spark uses default as parquet format.
+	-- Option gains allows us to configure how to write our give data partition BY , bucke by sort bY works only for file based datasources 
+	-- We can use them to get specific layout of the file at destination.
+Basics of writting Data:
+	-- Th efindation of writting data is quite similar to that of reading data.
+	-- Instead of DataFrame Reader we have DataFrame Writer.
+	-- Because we always need to write out some given datasource we acess dataframe writer via write attribute.
+DataFrame.write:
+	-- After we write the DataFrame writer then we will specify teh format and then options and then save. at minum we will need to give a path to store the DataFrame.
+dataframe.write.format("csv").option("mode", "OVERWRITE").option("dateFormat", "yyyy-MM-dd").option("path", "path/to/file(s)").save()		
+	-- this is the simple way of writting a Dataframe.
+SaveModes:
+	-- append Appends the output files to the list of files that already exist at that location
+	-- overwrite Will completely overwrite any data that already exists there
+	-- errorIfExists Throws an error and fails the write if data or files already exist at the specified location
+	-- ignore If data or files exist at the location, do nothing with the current DataFrame	
+	-- The default is error if exist 
+CSVFiles:
+
+Read/Write 		Key 							Potentialvalues 						Defaults 						description
+Both 			sep 							Anysingle String character					,					The single character that is used as 
+																												seperator or each field and value.
+Both 			Header 							true,false 								false 					A boolean flag that declares weather 																													the first lines in the columns are 	
+																												column name or not.			
+Read 			Escape							Any String Character 						/					The character spark should use to escape
+																												the special characters in the file.
+Read 			inferschema 					true,false 								false 					Specifies weather spark should decides																													column types when reading file.
+Read 			ignoreLeadingWhiteSpace 		true,false 								false 					Declares weather the reading spaces from
+																												the values which are read to be skipped
+Read 			ignoreTrailingWhiteSpace 		true,false 								false 					Declare weather the traking space from 
+																												the values which are read to skipped or no										
+Both 			nullValue 						AnyStringCharacter 						" "						Declares what character represents null 																												value in the file
+Both 			nanValue 						AnySteingCharacter 						NaN 					Declare what character represents the 																													NaN value in the file.
+Both 			positiveInf 					AnyStringorCharacter					Inf 					Declares what charactwe represents a 																													positive infinity value
+Both 			negativerInf 					AnyStringorCharacter 					-Inf 					Decalres what character represents a 	
+																												Negative infinity value
+Both 			compression or codec 			None,Uncompressed,bzip2,deflate
+												gzip,lz4,or snappy 						none 					Declares what compression codec spark 																	should read or write the file
+Both 			DateFormat 						AnyStringorCharacter that confirms
+												to java SimpleDataFormat 				yyyy-MM-dd 				Decalres the date format for nay columns																that are datatype
+Both 			timeStampFormat 				AnyStringorCharacter that confirms		yyyy-MM-dd'T'
+												to java SimpleDataFormat				HH.mm.ss.ssszz 			Declares the data format for any columns																that are DataTypes
+Read 			maxColumns 						AnyInteger 								20480					decalres the Maximum of number of 																															columns in a file
+Read 			MaxCharsPerColumn 				AnyInteger 								1000000					Declares tje Maximum number of chars in 																												a column.								
+Read 			escapeQuotes 					true,false 								true 					Decalres if Spark should escape the qu																													otes which are find in the line or not
+Read 			maxMalformedLogPerPartition 	AnyInteger 								10 						Sets the maximum number of malformed 
+																												rows spark will log for each partition
+																												malformed record beyond this number
+																												will be ignored.
+Write 			quoteAll 						true,false 								false 					Specifies if all values should be 
+																												enclosed n quotes as oppsed to just scaping values that have quote chars
+Read 			multiline 						true,false 								false 					This option allows to read multiline 																													CSV files where each logical row in the
+																												CSV file might span multiple rows in the
+																												file itself									
+Reading CSV file:
+	-- To read a csv while we have to create a dataframe reader like we do for another other format 
+	-- Here we specify the type as CSV
+spark.read.format("csv")
+	-- Here we are specifying the read format as CSV
+spark.read.format("csv").option("header", "true").option("mode", "FAILFAST").option("inferSchema", "true").load("some/path/to/file.csv")					-- So the basic way of reading a file would be like above first we have mentioned the format and then we are using option multiple times for like setting the mode to failfast and you know also using the inferschem as true and using the load function to load the file and this we will be able to read a CSV file
+import org.apache.spark.sql.types.{StructField, StructType, StringType, LongType}
+	-- Here we are importing a package to implement the above functions
+val myManualSchema = new StructType(Array(new StructField("DEST_COUNTRY_NAME", StringType, true),new StructField("ORIGIN_COUNTRY_NAME", StringType, 	true),new StructField("count", LongType, false)))																											-- Here we are defining a manualschema and we will assign the same to a DataFrame like below 
+spark.read.format("csv").option("header", "true").option("mode", "FAILFAST").schema(myManualSchema).load("/Users/kartikeyan/Desktop/Textbookie/Spark-The-Definitive-Guide-master/data/flight-data/csv/2010-summary.csv").show(5)
+	-- Here we reading a file in format CSv and the we are using options asking the spark to conisder the header as the columns names to the dataframe and then we are setting manualSchema with the variable which we have declared and then we are loading this filr by providing the path in load function.
+	-- Spark fails the job at execution time rather than DataDefination time due to lazy evaluation.
+Writting CSV file:
+	-- Just as for reading we also have many options for writing the data.
+val csvFile = spark.read.format("csv").option("header", "true").option("mode", "FAILFAST").schema(myManualSchema).load("/Users/kartikeyan/Desktop/Textbookie/Spark-The-Definitive-Guide-master/data/flight-data/csv/2010-summary.csv")																		-- Here we are reading a CSV file and creating a dataframe csvFile.
+csvFile.write.format("csv").mode("overwrite").option("sep", "\t").save("/Users/kartikeyan/Desktop/tmp/my-tsv-file.tsv")										-- Here we are writing a csv file into a tsv file very easily.
+JSON files:
+	-- In spark when we are referring to a JSON file we will be referring to a line delimited JSON file.
+	-- So we read Json file in single line delimited file and then multline delimited file and we mention that and make spark understand it by saying multiline true and multiline false when we say multiline true the Json will be read in multiple rows of spark but when we say multiline flase the entire json file will be considered as on whole row.
+	-- Line delimited is more stable is spark because it will allow us append a file with new record which is what recommended to use in spark.
+JSON options:
+
+Read/Write 		key 						potentialvalues 				Default 				Description
+Both 			Compressionorcodec			None,uncompressed,										Declared What copression codec spark should use to 
+											bzip2,deflate 					None 					Read or write the file.
+Both 			dateFormat 					Anystringconformsjave
+											SimpleDataFormat 				yyyy-mm-dd 				Declares Date format for any columns that declare t
+																									he date format
+Both 			timeStamp 						""								""					Decalres time stamp format for any column that 																											declare time stamp format 
+Read 			primitiveAsString 			true,false 						false 					Infers all primitive values as string type			
+Read 			allowComments 				true,false 						false 					Ignores all java/c++ type of commands in Jsonfiles
+Read 			allowUnQuotedFilesNames 	true,false 						false 					Allows unquoted Json fields name
+Read  			allowSingleQuotes 			true,false 						true 					Allows single quotes along with double quotes for jf
+Read 			allowNumericReadingZero 	true,false 						false 					Allows leading zeros in number
+Read 			allowsBackslashEscapingany
+				Character 					true,false 						false 					Allows accepting quotes of all characters using 
+																									backslash quoting mechanism
+Read 			columnNameOfCorruptedRecord AnyString 						imports 				related to malformed file
+Read 			multiline 					true,false 						false 					Allows for reading in nonline delimited Json files.
+
+spark.read.format("json")
+	-- reading a Json file using read format 
+spark.read.format("json").option("mode", "FAILFAST").schema(myManualSchema).load("/Users/kartikeyan/Desktop/Textbookie/Spark-The-Definitive-Guide-master/data/flight-data/json/2010-summary.json").show(5)	
+	-- Here we reading a Json file while mentioning many type fo option which we have in spark and loading file from a path using load function.
+csvFile.write.format("json").mode("overwrite").save("/Users/kartikeyan/Desktop/tmp/my-json-file.json")	
+	-- Here we are writing the same Json file into to a path which we have mationed and the name which we want the json to be.
+Parquet files:
+	-- parquet is open source columns oriented datatore that provides variety of storage optimisations espcially for analytical workload.
+	-- It provides a columnar compression which saves the storage space and allows for reading individual columns instead of an entire files.This the file format that works exceptionally well with apache spark and infact this the default file format spark has and uses.
+	-- So spark recommends to write any output file in parquet format which is alot better than that of csv and json
+	-- Another advanatage of parquet is that it supports complex types. This mean if our column is struct array map or any complex type we will be able to read without a problem 
+spark.read.format("parquet")
+	-- Read format for parquet 
+Reading parquet files :
+spark.read.format("parquet").load("/Users/kartikeyan/Desktop/Textbookie/Spark-The-Definitive-Guide-master/data/flight-data/parquet/2010-summary.parquet").show(5)
+	-- this is how we will be reading a parquet format 
+Parquet Options:
+
+Read/write 					key 				Potential Values 						Default 				Descriptions
+Write 						Compression
+							codec 					bla bla 							None 					Declares what compression codec spark 
+																												should use while reading a parquet
+Read 						MergeSchema 			true,false 							bla bla 				You can incrementally add columns to
+																												newly written Parquet files in the same
+																												table/folder. Use this option to enable or disable this feature
+csvFile.write.format("parquet").mode("overwrite").save("/tmp/my-parquet-file.parquet")
+	-- This is the way of writting the parquet file 
+ORC Files:
+	-- ORC is a self-describing type aware columnar file format designed for hadoop workloads. Is is optimised for strong streamin reads but with integrataed support for finding required rows quickly 
+	-- ORC actually don't have option for reading becuase spark understand ORC quite well. For say ORC and parquet are quite similar parquet is further optimised for spark where as ORC is further optimised for Hive
+spark.read.format("orc").load("/Users/kartikeyan/Desktop/Textbookie/Spark-The-Definitive-Guide-master/data/flight-data/orc/2010-summary.orc").show(5)
+	-- here we are reading a ORc file
+csvFile.write.format("orc").mode("overwrite").save("/tmp/my-json-file.orc")
+	-- Writting in ORC format 
+SQL Databases:
+	-- SQL datasources are one of the most powerful connectors because there are varaiety of systems to which you can connect. For an instance we can connect to MySQL Database, PostgreSQL Database, Oracel DataBase.
+	-- we can also connect to SQL Lite 	
+To read and write from the databases we need to do 2 things:
+	1.Include java connectivity driver on Database (JDBC) for our particular database on the spark classpath 
+	2.Should provide proper jar for driver itself
+spark-shell --driver-class-path /Users/kartikeyan/Desktop/sqlite-jdbc-3.8.6.jar --jars /Users/kartikeyan/Desktop/sqlite-jdbc-3.8.6.jars
+	-- If we want to run the sqllite database we are gonna do like above.
+
+JDBC data source options:
+url 											The JDBC URL to which to connect. The source-specific connection properties can be specified in the 													URL; for example, jdbc:postgresql://localhost/test?user=fred&password=secret.
+dbtable											The JDBC table to read. Note that anything that is valid in a FROM clause of a SQL query can be
+												used. For example, instead of a full table you could also use a subquery in parentheses.
+driver 											The class name of the JDBC driver to use to connect to this URL.
+
+partitionColumn,
+lowerBound, upperBound							If any one of these options is specified, then all others must be set as well. In addition,
+												numPartitions must be specified. These properties describe how to partition the table when reading
+												in parallel from multiple workers. partitionColumn must be a numeric column from the table in
+												question. Notice that lowerBound and upperBound are used only to decide the partition stride, not for
+												filtering the rows in the table. Thus, all rows in the table will be partitioned and returned. This option applies only to reading.
+numPartitions 									The maximum number of partitions that can be used for parallelism in table reading and writing. This
+												also determines the maximum number of concurrent JDBC connections. If the number of partitions
+												to write exceeds this limit, we decrease it to this limit by calling coalesce(numPartitions) before 
+												writing.
+fetchsize										The JDBC fetch size, which determines how many rows to fetch per round trip. This can help
+												performance on JDBC drivers, which default to low fetch size (e.g., Oracle with 10 rows). This
+												option applies only to reading.
+batchsize										The JDBC batch size, which determines how many rows to insert per round trip. This can help
+												performance on JDBC drivers. This option applies only to writing. The default is 1000.
+isolationLevel									The transaction isolation level, which applies to current connection. It can be one of NONE,
+												READ_COMMITTED, READ_UNCOMMITTED, REPEATABLE_READ, or SERIALIZABLE, corresponding to
+												standard transaction isolation levels defined by JDBC’s Connection object. The default is
+												READ_UNCOMMITTED. This option applies only to writing. For more information, refer to the
+												documentation in java.sql.Connection.
+truncates 										This is a JDBC writer-related option. When SaveMode.Overwrite is enabled, Spark truncates an
+												existing table instead of dropping and re-creating it. This can be more efficient, and it prevents the
+												table metadata (e.g., indices) from being removed. However, it will not work in some cases, such as
+												when the new data has a different schema. The default is false. This option applies only to writing.
+createTableOptions								This is a JDBC writer-related option. If specified, this option allows setting of database-specific 													table and partition options when creating a table (e.g., CREATE TABLE t (name string)ENGINE=InnoDB). 													This option applies only to writing.
+createTableColumnTypes							The database column data types to use instead of the defaults, when creating the table. Data type
+												information should be specified in the same format as CREATE TABLE columns syntax (e.g.,
+												“name CHAR(64), comments VARCHAR(1024)”). The specified types should be valid Spark SQL
+												data types. This option applies only to writing.	
+
+Reading from SQL Databases:
+	-- When it comes to reading a SQL nothing changes when compared to other.
+val driver = "org.sqlite.JDBC"
+	-- here we are assigning the sqlite driver to a varaible 
+val path = "/Users/kartikeyan/Desktop/Textbookie/Spark-The-Definitive-Guide-master/data/flight-data/jdbc/my-sqlite.db"
+	-- Giving the path of the file 
+val url = s"jdbc:sqlite:/${path}"
+	-- reading the path in concerened URL 
+val tablename = "flight_info"
+	-- here we are giving the table name which we want to read 
+import java.sql.DriverManager
+	-- Here we are importing a package 
+val connection = DriverManager.getConnection(url)
+	-- checking connection and assigning to variable
+connection.isClosed()
+	-- Finally checking for the connection
+connection.close()	
+	-- finally clossing
+	-- If the connection succeds with out any error we will be reading a dataframe from the SQL table.
+val dbDataFrame = spark.read.format("jdbc").option("url", url).option("dbtable", tablename).option("driver", driver).load()			
+	-- Here we are reading a table into a dataframe 
+dbDataFrame.show()
+	-- We will be able to see the DataFrame.	
+	-- As we all know SQL lite is very simple and easy to acess and don't have any users in it
+spark-shell --driver-class-path /Users/kartikeyan/Desktop/jary/mysql-connector-java-8.0.16.jar --jars /Users/kartikeyan/Desktop/jary/mysql-connector-java-8.0.16.jar
+	-- Here if we wanna connect to a database which have you knoe user and password. and also load the corresponding jars so that spark can use them and we did that in the above step.
+val pgDF = spark.read.format("jdbc").option("driver", "com.mysql.jdbc.Driver").option("url", "jdbc:mysql://localhost:3306/recipes_database?useLegacyDatetimeCode=false&serverTimezone=UTC").option("dbtable", "recipes_database.recipes").option("user", "root").option("password","light").load()		
+	-- Here we are establishing the connection and loading the databases and reading the table from the database
+Output:
++---------+--------------+                                                      
+|recipe_id|   recipe_name|
++---------+--------------+
+|        3|Grilled Cheese|
+|        1|         Tacos|
+|        2|   Tomato Soup|
++---------+--------------+
+dbDataFrame.select("recipe_name").distinct().show(5)
+	-- Here we are performing a select operation on DB
+	-- This the table that which is literally present in the MysqlDatabase.
+QueryPushDown:
+	-- First spark makes best effort to filter the data in the database itself before creating a dataframe.
+	-- So for example when we have checked the above example spark have pulled only relevant information.
+dbDataFrame.select("DEST_COUNTRY_NAME").distinct().explain
+	--Spark can actually do better than this on certain queries. For example, if we specify a filter on our
+	DataFrame, Spark will push that filter down into the database. We can see this in the explain plan
+	under PushedFilters
+val pushdownQuery = """(SELECT DISTINCT(DEST_COUNTRY_NAME) FROM flight_info) AS flight_info"""
+	-- Sql Way
+val dbDataFrame = spark.read.format("jdbc").option("url", url).option("dbtable", pushdownQuery).option("driver", driver).load()
+	-- Creating a table
+	-- Output is a table an when we will query the table we will be query the table which we have filtered from actual table.
+dbDataFrame.explain()	
+	-- Here we are saying expalin and we will be getting all the details about the table and what is pushed down and all 
+Reading from databases in parallel
+	-- Spark has an underlying algorithm that can read multiple files into a single partition or conersely read multiple partition out of one file depending on the file type and spliteability of the file type and compression.
+	-- the same thing is avaialble for SQL file also but the only concern here we have to do to more manually then we normally do with other files.
+	-- Here we have ability to specify the maximum number of partition to be done on a file or something like that.
+val dbDataFrame = spark.read.format("jdbc").option("url", url).option("dbtable", tablename).option("driver", driver).option("numPartitions", 10).load()		-- Here if we even mention the number of partition the number of partition will not change cause tha data is very low this can also happen 				oppositely.
+dbDataFrame.select("DEST_COUNTRY_NAME").distinct().show()
+	-- There so many optimisation which are seen under another API set and we can explicitly push the prediacte down to the SQL table itself.
+	-- This optimisation allows you to control certain physical location of certain data in certain partition by's
+val props = new java.util.Properties
+props.setProperty("driver", "org.sqlite.JDBC")
+val predicates = Array("DEST_COUNTRY_NAME = 'Sweden' OR ORIGIN_COUNTRY_NAME = 'Sweden'","DEST_COUNTRY_NAME = 'Anguilla' OR ORIGIN_COUNTRY_NAME = 'Anguilla'")
+spark.read.jdbc(url, tablename, predicates, props).show()
+spark.read.jdbc(url, tablename, predicates, props).rdd.getNumPartitions
+	-- So we have achived the partitions thing in a different way 
+val props = new java.util.Properties
+props.setProperty("driver", "org.sqlite.JDBC")
+val predicates = Array(
+"DEST_COUNTRY_NAME != 'Sweden' OR ORIGIN_COUNTRY_NAME != 'Sweden'",
+"DEST_COUNTRY_NAME != 'Anguilla' OR ORIGIN_COUNTRY_NAME != 'Anguilla'")
+spark.read.jdbc(url, tablename, predicates, props).count() 
+	-- Prediactes which have duplicates.
+val props = new java.util.Properties
+props.setProperty("driver", "org.sqlite.JDBC")
+val predicates = Array(
+"DEST_COUNTRY_NAME != 'Sweden' OR ORIGIN_COUNTRY_NAME != 'Sweden'",
+"DEST_COUNTRY_NAME != 'Anguilla' OR ORIGIN_COUNTRY_NAME != 'Anguilla'")
+spark.read.jdbc(url, tablename, predicates, props).count() 
+
+Partitioning based on a sliding window
+	-- We are doing partitioning in a different way 
+	-- Here we are seeing how we can do partitioning based on predicates.
+	-- In this example we will partition based on numerical column called as count and we will also specify the maximum and minimum of the each partition too anything inside of the bound will be in first partition and anything outside of the bound will be in last or the second partition
+	-- Spark then quries the database is parallel and you know will return the partition mentiond in the numPartitions.
+val colName = "count"
+val lowerBound = 0L
+val upperBound = 348113L 
+val numPartitions = 10
+	-- This is we what we did and we will use this later 
+spark.read.jdbc(url,tablename,colName,lowerBound,upperBound,numPartitions,props).count() 	
+	-- NAHHHH
+Writing to SQL Databases
+	-- Writting to SQL Databases is just easy as before.
+	-- We simply specify the URL and write out the data according to the specified write mode that we want 
+TextFiles:
+	-- Saprk also allows us to read plain text files 
+spark.read.textFile("/Users/kartikeyan/Desktop/Textbookie/Spark-The-Definitive-Guide-master/data/flight-data/csv/2010-summary.csv").selectExpr("split(value, ',') as rows").show()		
+	-- Here we are reading a textfile.
+Writting TextFiles:
+	-- While writing the text file we need to make sure that there is only one string column otherwise the write will fail
+csvFile.select("DEST_COUNTRY_NAME").write.text("/tmp/simple-text-file.txt")
+	-- Here we are just writting a text file
+	-- If we perform some partitioning on the write we can write more columns.However those columns manifeast as directories. 			
+Advanced I/O types:
+	-- We saw previously that we can control the parallelism of files that we write by controlling them before writting the files.
+	-- We can also control specific data layout by controlling 2 things:
+			1.buketing 
+			2.Partitioning
+Splittable File types and compression:
+	-- Certain file formats are fundamentally splittable. This can improve speed because this will saprk to avoid reading the entire file and acess only that parts of the file where we can satisfy the condition.
+	-- Additionally if we are using something like Hadoop file System (HDFS) splitting a file provides further optimisation if the file spans multiple blocks In conjection with this there is a need to manage compression
+	-- Not all compression schemas are splittable to make it some spark recommonds parquet with gzip
+Reading Data in Parallel:
+	-- Multiple Executors cannot read from the same file at the same time nessacarily but they can read different files at same time.
+	-- Which mean if we have multiple files in a folder they all become each partition for spark and the exectors run parallely on them 	 			
+csvFile.repartition(5).write.format("csv").save("/tmp/multiple.csv")
+	-- Example when we see the above statement we are setting as 5 partition when we write this we will end up with 5 files inside a folder.
+ls /tmp/multiple.csv
+	-- this folder will have 5 files because we splitted the file already or we can say 
+Partitioning:
+	-- Partitioning is a tool which allows us to control where data is store as we write it.
+	-- when we write a file to a partitioner or a table we basically encode a column as a folder.
+	-- This allow us to skip lot of data when we go and read later,which will allow us to read the data which we want instead of reading the entire things.
+	-- there are supported for all file based data structures.
+csvFile.limit(10).write.mode("overwrite").partitionBy("DEST_COUNTRY_NAME").save("/tmp/partitioned-files.parquet")	
+	-- This is will write a file on to the path with we have mentioned with 10 partition 
+ ls /tmp/partitioned-files.parquet	
+ 	-- here we are ls on the file and we will see the file is written in multiple partitions with column name as below 
+DEST_COUNTRY_NAME=Costa Rica/
+DEST_COUNTRY_NAME=Egypt/
+DEST_COUNTRY_NAME=Equatorial Guinea/
+DEST_COUNTRY_NAME=Senegal/
+DEST_COUNTRY_NAME=United States/	
+Bucketing:
+	-- Bucketing is another file organizing approach with which we can control the data that is specifically written on each file 
+	-- This will avoid the shuflles laters when we go and read the file because the data with same bucketID will all be grouped together into one physical partition.
+	-- This means data is preparationed according to how you expect to use the data later on which means we can avoid expensive shuffles when we are joining and aggregating.
+val numberBuckets = 10
+val columnToBucketBy = "count"
+	-- Bucketing related
+csvFile.write.format("parquet").mode("overwrite").bucketBy(numberBuckets, columnToBucketBy).saveAsTable("bucketedFiles")		
+$ ls /user/hive/warehouse/bucketedfiles/
+	-- This is gonna be saved in hive warehouse.
+part-00000-tid-1020575097626332666-8....parquet
+part-00000-tid-1020575097626332666-8....parquet
+	-- Will look like this .
+	-- Bucketing is supported only for spark manage tables.
+Writting Complex types:
+	-- Although all the complex types work well with spark we can thing like csv file is not that well with the complex type but where as parquet and ORC are.
+Managing file sizes:
+	-- Managing file sizes is important not only for writting the writting the data bit also reading it later on..
+	-- When we are writting lot of small files spark will be having lot of metadata and that will be overwhlemed so spark is not good with small files. As we all know having a one large big file is also not suggestable because to read a few number of rows also we need the big fat block.
+	-- Where here spark introduces a important way to control this file sizes automatically. As we can see if we write a file on to the disk we can see park automatically picks the number of partition even though we don't mention them.
+	-- Not only that we can also take advantage of another tool inorder to limit our output file sizes so that we can generate a optimum file size.
+MaxRecordsPerFile:
+	-- We can use this file and limit the number of rows in the file and which will inorder result in the optimum sixe of the file.
+df.write.option("maxRecordsPerFile", 5000),
+	-- here if we say like above spark is gonna write only 5000 records in the file 
+
+
+spark.sql("SELECT 1 + 1").show()
+	-- We can do SQL in Spark and Python like above statement.
+	-- This above statement returns a DataFrame and we can execute that programmatically just like other transformation and this also follows lazy evaluation.
+	-- This is very powerful to spark because it is easy to write somethings on SQL than in Dataframes and API's
+	-- We can execute multiline query quite simply by passing multiline string into the function 
+spark.sql("""SELECT user_id, department, first_name FROM professors WHERE department IN(SELECT name FROM department WHERE created_date >= '2016-01-01')""")		
+	-- We can simply do this ins Scala or python.
+	-- The more power full thing is we can use SQL on Dataframes and Dataframe logic on SQL tables.
+spark.read.json("Users/kartikeyan/Desktop/Textbookie/Spark-The-Definitive-Guide-master/Data/flight-data/json/2015-summary.json").createOrReplaceTempView("some_sql_view") 
+	-- by doing this or writting the above statemnet we are loading a file and creating a Dataframe and then immediately are creating a TempTable to acess the DataFrame in SQL way 
+	-- Here we are spark format to read a Json file from a mention path.
+spark.sql(""" SELECT DEST_COUNTRY_NAME, sum(count) FROM some_sql_view GROUP BY DEST_COUNTRY_NAME""").where("DEST_COUNTRY_NAME like 'S%'").where("`sum(count)` > 10").count() 	
+	-- Here we are writting SQL query and making the changes to the data or the temptableview and then when we say count it is converted from SQL to DataFrame.
+./sbin/start-thriftserver.sh
+	-- This command will help us to run JDBC ODBC connection and this should be done in spark bin folder.
+	-- This script accepts all bin/spark-submit commands-line options to see all available options for configuring this thrift server we need to run 
+./sbin/start-thriftserver.sh --help
+	-- When we do this by default the server listens to localhost 100000. We can also override this through environmental variable or system properties.
+export HIVE_SERVER2_THRIFT_PORT=<listening-port>
+export HIVE_SERVER2_THRIFT_BIND_HOST=<listening-host>
+./sbin/start-thriftserver.sh \
+--master <master-uri> \
+...			
+	-- For environment configartion We need to use the above thing 
+/sbin/start-thriftserver.sh \
+--hiveconf hive.server2.thrift.port=<listening-port> \
+--hiveconf hive.server2.thrift.bind.host=<listening-host> \
+--master <master-uri>
+...
+	-- For system properties use the above thing.
+./bin/beeline
+	-- We are kick starting the beeline.
+beeline> !connect jdbc:hive2://localhost:10000
+	-- We can test the connection using the above thing.
+	-- When we do thi beeline will ask for Username and Password and we can simply type username on our machiner and blank password and this is for nin secure connection and for secure connection we need to go through other things.
+Catalog:
+	-- Highest level of abstraction in SparkSQL is in the catalog.The catalog is abstarction for the storage of metadata the data stored in our tables and as well as other helpful things like Database tables, function and views.
+org.apache.spark.sql.catalog.Catalog 
+	-- This catalogue is available in the above package and this also contains a number of helpful function for doing the things like databases functions tables and views.
+CREATE TABLE flighties (DEST_COUNTRY_NAME STRING, ORIGIN_COUNTRY_NAME STRING, count LONG)USING JSON OPTIONS (path '/home/santhoshi/test/Textbookie/Spark-The-Definitive-Guide-master/data/flight-data/json/2015-summary.json')
+	-- Here we are just creating a table and then using "Using Json Options" we are loading the file on which we want to create a table.
+	-- The Using syntax is important which we have used in the above example.If we don't mention the format spark will default to hive serde configaration.
+	-- This SerDe configartion make cause problem to future user because spark SerDe' are much slower thant the of spark native serialization.
+	-- When we want use hive we can simply use SAVE AS option to use it in hive.
+CREATE TABLE flighties_csv (DEST_COUNTRY_NAME STRING,ORIGIN_COUNTRY_NAME STRING COMMENT "remember, the US will be most prevalent",count LONG)USING csv OPTIONS (header true, path '/home/santhoshi/test/Textbookie/Spark-The-Definitive-Guide-master/data/flight-data/csv/2015-summary.csv')						-- We can add comments to the tables which will help other developers to understand what the table exactly about
+CREATE TABLE flights_from_select USING parquet AS SELECT * FROM flights;
+	-- We can also create tables by using the normal commands.
+CREATE TABLE partitioned_flighties USING parquet PARTITIONED BY (DEST_COUNTRY_NAME)AS SELECT DEST_COUNTRY_NAME, ORIGIN_COUNTRY_NAME, count FROM flights LIMIT 5	
+	-- Here we are using partition by for creating a table.
+CREATE EXTERNAL TABLE hive_flights (DEST_COUNTRY_NAME STRING, ORIGIN_COUNTRY_NAME STRING, count LONG)ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LOCATION '/home/santhoshi/test/Textbookie/Spark-The-Definitive-Guide-master/data/flight-data-hive/'
+	-- Here we are using hive to create a table in the SparkSQL.
+CREATE EXTERNAL TABLE hive_flighties_2 ROW FORMAT DELIMITED FIELDS TERMINATED BY ','LOCATION '/home/santhoshi/test/Textbookie/Spark-The-Definitive-Guide-master/data/flight-data-hive/' AS SELECT * FROM flights	
+	-- Here we are creating a table in another simple way .
+INSERT INTO flights_from_select SELECT DEST_COUNTRY_NAME, ORIGIN_COUNTRY_NAME, count FROM flights LIMIT 20	
+	-- Here we are inserting into tables.
+INSERT INTO partitioned_flights PARTITION (DEST_COUNTRY_NAME="UNITED STATES")SELECT count, ORIGIN_COUNTRY_NAME FROM flightsWHERE DEST_COUNTRY_NAME='UNITED STATES' LIMIT 12	
+	-- Another way if inserting into table.
+DESCRIBE TABLE flights_csv
+	-- Previous;y we have declared or wriiten some comments while creating the table and we will be able to view them in metadata using the above command.
+SHOW PARTITIONS partitioned_flights
+	-- We can see the partitioned schema for the data with the above commmand.
+REFRESH table partitioned_flights
+	-- Maintaining the tables metadata is important because that is when we will know if we are using the mostrecent set of data.
+	-- There are 2 ways to refersh the tables metadata REFERESH TABLE refershes all cached entries associated with the table If the table was cached previously it is gonna be caches lazily next time it is cached.
+MSCK REPAIR TABLE partitioned_flights
+	-- Another way of refershing the table is using the REPAIR TABLE command which refreshes the partition maintained in the catalogue or the given table.
+	-- This command focuses on collecting the new partition information an example might be writting the partition manually and the need of repair table accordinglly.
+DROP TABLE flights_csv;		
+	-- This command is used to drop the tables accordingly when not needed.When we drop a managed table both data and the table defination will be removed.
+DROP TABLE IF EXISTS flights_csv;
+	-- to check if the table exist and delete it we are gonna use the above command.
+	-- When we are dropping the unmanaged table the data will not be dropped but the table will be and we will no longer be able to refer the data with the same table name.
+CACHE TABLE flights
+	-- We can cache the table like we cache the dataframe
+UNCACHE TABLE FLIGHTS
+	-- We can uncache them by using the above command.
+CREATE VIEW just_usa_view AS SELECT * FROM flights WHERE dest_country_name = 'United States'							
+	-- Here we are creating a view for the table flights 
+CREATE TEMP VIEW just_usa_view_temp AS SELECT * FROM flights WHERE dest_country_name = 'United States'
+	-- We can also create temporary view and this can be done for the cuurent session and will not be register to any of the databases
+CREATE GLOBAL TEMP VIEW just_usa_global_view_temp AS SELECT * FROM flights WHERE dest_country_name = 'United States'	
+	-- Here we are creating a global tempview of the table.This create a view for the entire spark application temporarily and will be lapsed when we end the session .
+CREATE OR REPLACE TEMP VIEW just_usa_view_temp AS SELECT * FROM flights WHERE dest_country_name = 'United States'
+	-- Here we are overwritting the view if already exist.
+	-- We can overwrite both tempviews and regualr views.
+SELECT * FROM just_usa_view_temp
+	-- A view is effectively a tranfomation and spark will perform it at the time of querying.
+val flights = spark.read.format("json").load("/data/flight-data/json/2015-summary.json")val just_usa_df = flights.where("dest_country_name = 'United States'")just_usa_df.selectExpr("*").explain	
+	-- Here we are using the same view thing using dataframes and we can also say that the view is nothing but generating a dataframe from the existing dataframes.
+EXPLAIN SELECT * FROM just_usa_view
+	-- This will explain what happened on the view 
+EXPLAIN SELECT * FROM flights WHERE dest_country_name = 'United States'
+	-- We can say that the above both commands are same.		
+DROP VIEW IF EXISTS just_usa_view;
+	-- By using the above command we will be able to drop the views of a table.
+SHOW DATABASES
+	-- This will show all the databases present in the spark SQL
+CREATE DATABASE some_db
+	-- Here by doing this we are creating a Database.
+USE some_db
+	-- Here we are using the DB which we have created in the above statement.
+SHOW tables
+	-- When we do show tables on the databases it will show the tables if there are any in the database we are using.
+SELECT * FROM flights 
+	-- this will fail because we are in different databases and the flights which we are referring to will not be avaialble in the database which we have created
+SELECT * FROM default.flights
+	-- However to acess the tables whic are in the different databases can be referred from any other database.
+SELECT current_database()
+	-- this will say which database we will be using in the session.
+USE default;
+	-- We can switch back to default using the above command and switch back to the default DB.
+DROP DATABASE IF EXISTS some_db;
+	-- This will drop the Databse if exist 
+SELECT [ALL|DISTINCT] named_expression[, named_expression, ...]
+FROM relation[, relation, ...]
+[lateral_view[, lateral_view, ...]]
+[WHERE boolean_expression]
+[aggregation [HAVING boolean_expression]]
+[ORDER BY sort_expressions]
+[CLUSTER BY expressions]
+[DISTRIBUTE BY expressions]
+[SORT BY sort_expressions]
+[WINDOW named_window[, WINDOW named_window, ...]]
+[LIMIT num_rows]
+named_expression:
+: expression [AS alias]
+relation:
+| join_relation
+| (table_name|query|relation) [sample] [AS alias]
+: VALUES (expressions)[, (expressions), ...]
+[AS (column_name[, column_name, ...])]
+expressions:
+: expression[, expression, ...]
+sort_expressions:
+: expression [ASC|DESC][, expression [ASC|DESC], ...]
+	-- This are all the select statements and the layouts.
+SELECT CASE WHEN DEST_COUNTRY_NAME = 'UNITED STATES' THEN 1 WHEN DEST_COUNTRY_NAME = 'Egypt' THEN 0 ELSE -1 ENDFROM partitioned_flights	
+	-- we are using the case statemnet thats all 
+CREATE VIEW IF NOT EXISTS nested_data AS SELECT (DEST_COUNTRY_NAME, ORIGIN_COUNTRY_NAME) as country, count FROM flights				
+	-- this is how we create a nested view of a table or a data set.
+SELECT * FROM nested_data
+	-- We can query it and see what it look like 
+SELECT country.DEST_COUNTRY_NAME, count FROM nested_data	
+	-- We can also use individual columns in struct in order to see how it looks like but the only thing we need to use is (.)	dot syntax.
+SELECT country.*, count FROM nested_data
+	-- If we like we can also select all the subvalues from the struct by using the struct name and select all the sub columns although they aren't subcolumns but doing that way makes them doing anything them like we do to columns.
+SELECT country.*, count FROM nested_data
+	-- Like this 
+SELECT DEST_COUNTRY_NAME as new_name, collect_list(count) as flight_counts, collect_set(ORIGIN_COUNTRY_NAME) as origin_set FROM flights GROUP BY DEST_COUNTRY_NAME	
+	-- Here we are trying to create a list 
+SELECT DEST_COUNTRY_NAME, ARRAY(1, 2, 3) FROM flights
+	-- We can also create an array with in a columns.
+SELECT DEST_COUNTRY_NAME as new_name, collect_list(count)[0] FROM flights GROUP BY DEST_COUNTRY_NAME
+	-- We also query the list by using positions by using python like array query syntax.
+CREATE OR REPLACE TEMP VIEW flights_agg ASSELECT DEST_COUNTRY_NAME, collect_list(count) as collected_countsFROM flights GROUP BY DEST_COUNTRY_NAME	
+	-- we have created an array so that we can use explode function the same thing
+SELECT explode(collected_counts), DEST_COUNTRY_NAME FROM flights_agg
+	-- Now we are using the explode function and exploding 
+	-- Like in above statement we will also be able to convert the arrays into normal rows We can do this by using explode function 	
+SHOW FUNCTIONS
+	-- This will show all the function in the spark SQL. we can see list of all function in SQL.
+SHOW SYSTEM FUNCTIONS
+	-- By this we are more specifically saying spark which type of function system function or user function of type.
+SHOW USER FUNCTIONS
+	-- Here we are doing the exact opposite of above function. and here it will show all the default user functions.
+SHOW FUNCTIONS "s*";
+	-- If we want to see what are the functions that are all with S* we need use this function 
+SHOW FUNCTIONS LIKE "collect*";
+	-- We can also include like keyword even though it is not nessacary.
+DESCRIBE:
+	-- using the describe keyword we can know more about the function which we have see in the list 	
+def power3(number:Double):Double = number * number * number
+spark.udf.register("power3", power3(_:Double):Double)
+	-- The above is user defined function and we used it any where we want .
+SELECT count, power3(count) FROM flights
+	-- This is gonna resuly differently and according to the user defined function.
+	-- You can also register functions through the Hive CREATE TEMPORARY FUNCTION syntax
+SELECT dest_country_name FROM flights GROUP BY dest_country_name ORDER BY sum(count) DESC LIMIT 5
+	-- Here we are writting a normal query and that will give the below output.
+Output:
+ +-----------------+
+|dest_country_name |
++-----------------+
+| United states 	|
+| Canada 			|
+| Mexico			|
+| United Kingdom	|
+| Japan				|
++-----------------+			
+
+SELECT * FROM flights WHERE origin_country_name IN (SELECT dest_country_name FROM flightsGROUP BY dest_country_name ORDER BY sum(count) DESC LIMIT 5)		-- Here we are are placing the subquery as filter and check if the orginal country exist in the list.
+	-- This is query is uncorrelated because we didn;t use the output from outer scope.
+UDF:
+val add_n = udf((x: Integer, y: Integer) => x + y)
+myRange.withColumn("unique_id",add_n(lit(1), col("number").cast("int")))
+	-- This is an UDF and here we are defining how to add a new column with number i.e. continous number so that we cab get the numbers assigned to all the rows in the data frame
+SET spark.sql.shuffle.partitions=20
+	-- Here we are satting configuaration of SQL not in detail
+---------------------------------------
+
+case class Flight(DEST_COUNTRY_NAME: String,ORIGIN_COUNTRY_NAME: String, count: BigInt)
+	-- Here we are defining a case class.
+val flightsDF = spark.read.parquet("/Users/kartikeyan/Desktop/Textbookie/Spark-The-Definitive-Guide-master/Data/flight-data/parquet/2010-summary.parquet/")	
+	-- We will read a file and that is still a dataframe but we can need to change it like we want.
+flightsDF.printSchema()
+root
+ |-- DEST_COUNTRY_NAME: string (nullable = true)
+ |-- ORIGIN_COUNTRY_NAME: string (nullable = true)
+ |-- count: long (nullable = true)
+ 	-- the above is the way which spark is reading a Dataframe on it own by taking its own types and we defined our owm in case class and we are gonns use that to chnage the types in the Dataframe that we have created	
+val flights = flightsDF.as[Flight]
+	-- Now we are changing the Dataframe which we have created by loading which is flightsDF to case class flight 
+	-- when we see in the above schema spark has considered the above count as long but we have chnaged that to bigInt by using case class
+flights.show(2)
+	-- Actions we use are same for dataframes and datasets
+flights.first.DEST_COUNTRY_NAME	output:res47: String = United States 
+	--we don’t need to do any type coercion, we simply specify the named attribute of the case class and get back, not just the expected value but the expected type, as well:
+Transformations for Datasets:
+	-- Transformation for Datsets are same as those of which we saw for dataframes.Any transformation that we would read in this section is valid on a dataset , and we encourage you to look through the specific sections on relevant aggregations or joins.
+	-- In addition to those transformation datasets alsi allow us to specify more complex and strongly typed transformations that we could perform of Dataframes alone because we manipulate Raw JVM types. 
+	-- To get grip of the raw object manipulation we will be doing a filter operation on the data type we created.
+Filtering:
+	-- We will be doing a simple example in which we will be creating a simple function that accepts a flight and simply returns a boolean value that described the origin of the flight and destination are same This is not a UDF but a generic function.
+	-- Now we will be defining a function to achive the filter which we want or the above which we are trying to acheive.
+	-- by specifiying the function we are asking or forcing spark to evaluate this function on every row in the dataset.This can be very resource intensive for a simple filter operation it is always preferred to write a SQL expression. This will greatly help us to reducing the cost of filtering out the data and also allowing us to manipulate the dataframe which we have filter to a dataset later on 
+def originIsDestination(flight_row: Flight): Boolean = {
+return flight_row.ORIGIN_COUNTRY_NAME == flight_row.DEST_COUNTRY_NAME
+}	
+	-- Here we are defining a function to apply the filter which we want in which the filghts destination country name and orgin country name are same and should return a boolean value to check that.
+	-- Now we can pass this function to the filter method specifying the each row it should verify that this function return true and this process will filter out the data accordingly.
+flights.filter(flight_row => originIsDestination(flight_row)).first()
+	-- here we using the dataset we have created and appliying a filter and saying that use this function in the filter and we said first so it shows the first one.
+output:
+Flight = Flight(United States,United States,348113)
+	-- It shows the matching and return a booelan value as defined.
+	-- As we saw earlier, this function does not need to execute in Spark code at all. Similar to our UDFs, we can use it and test it on data on our local machines before using it within Spark.
+flights.collect().filter(flight_row => originIsDestination(flight_row))
+	-- As this dataset is small enough to collect to a driver on which we can perform same collect operation and filter as well.
+output:
+	Array[Flight] = Array(Flight(United States,United States,348113))
+Mapping:
+	-- Filtering is a simple operation but sometimes we need to map one value to another. We did this with our function in previous example: it accepts a filgth and return a boolean value but other times we might actually need to perform something more sophisticates as Extract value compare a set of values or something similar 
+	-- The simplest example n maipulation our Dataset such that we can extract on value from each row This effectively performing the dataframe like select on our dataset.
+	-- Extracting the destination.
+val destinations = flights.map(f => f.DEST_COUNTRY_NAME)
+	-- when we do the above we end up with a Dataset of type string. This is because spark already knows the JVM type that this sult should return and allows us to benfit from compile time checking if for some reason it is invalid.We can collect this and get back an array of strings on the driver:
+val localDestinations = destinations.take(5)
+	-- now we are taking the 5 from the destination that we have extracted from the entire dataset and we all know this is not possible on Dataframes.
+	if we do so we can achieve the same with dataframes and it is also recommended to do that but if you want to use this case then there should be something related to column by column maniplutaion to do so.
+Joins:
+	-- they are similar to that we have done with dataframes also datasets provide more sophisticates way that is joinWith methods. joinWith is almost similar to co-group with on RDD's and we basically end up with 2 nested datasets in "1".
+	-- Each column represents on Dataset and they can be manipulated accordingly.
+	-- This can be useful when we need to maintain more information in the join or perform somemore sophisticated anipulation on the entire result set like an advance map or filter.
+	-- Creating a fake flight metadata dataset to demonstrate joinWith:					
+case class FlightMetadata(count: BigInt, randomData: BigInt)
+	-- function and we are defining that with a case class and we are saying count is bigInt and randomData bigInt.
+val flightsMeta = spark.range(500).map(x => (x, scala.util.Random.nextLong)).withColumnRenamed("_1", "count").withColumnRenamed("_2", "randomData").as[FlightMetadata]	
+	-- here we are using spark range function and mentioning the range as 500 and saying .map x=> x , random long and with column renames as _1 as count and _2 as randomData
+val flights2 = flights.joinWith(flightsMeta, flights.col("count") === flightsMeta.col("count"))	
+	-- here we are using joining flights with flightsmeta where flights.count column is equal to flightsMeta.coount column.
+	-- when we do this we end up with a dataset of type key value pairs in which each row represents flight and flight metadata we can query this as dataset or dataframe of type complex
+flights2.selectExpr("_1.DEST_COUNTRY_NAME")
+	-- We are acessing it as dataframe and as complex type too.
+flights2.take(2)
+	-- We can collect them as we did before.
+val flights2 = flights.join(flightsMeta, Seq("count"))
+	-- normal join is alos possible but we will be ending up loosing the type data in JVM	
+	-- We always define another dataset to gain it back It is important to know that there is no problem in joining a dataset or dataframee they both result in the same thinge.
+Grouping and aggregations:
+	-- grouping and aggregation follow the samw fundamentals as we discussed previously for dataframe.
+	-- So roll by groupy by cube will still aplly but they are gonna result in a dataframe and we will lose the information type.
+flights.groupBy("DEST_COUNTRY_NAME").count()
+	-- This is often is not too big to deal but if we want to keep the type information clear there aggregation which are different can be performed and an example for that would be groupByKey method.
+	-- This groupByKey will help us to group by specific key in th dataset nd get a typed dataset in return. This function however will not accept a column name but rather a function.This makes it possible to specify more sophisticated grouping functions that are more kin to something like below:
+flights.groupByKey(x => x.DEST_COUNTRY_NAME).count()
+	-- although we are able perform an aggregation on dataset and getting result dataset which is also a dataset with types not changed that is not a good thing because now we are introducing JVM types as well as a function for which spark cannot do any optimisatiom so we will be seeing a performance difference and we can see this when we inspect the explain plan of dataset.
+flights.groupByKey(x => x.DEST_COUNTRY_NAME).count().explain
+	-- Here we are effectively appending a new column to dataframe with a function and then performing a grouping on that
+Output:
+== Physical Plan ==
+*HashAggregate(keys=[value#1396], functions=[count(1)])
++- Exchange hashpartitioning(value#1396, 200)
++- *HashAggregate(keys=[value#1396], functions=[partial_count(1)])
++- *Project [value#1396]
++- AppendColumns <function1>, newInstance(class ...
+[staticinvoke(class org.apache.spark.unsafe.types.UTF8String, ...
++- *FileScan parquet [D..
+	-- After we perform grouping on a dataset using key we can operate on key,value dataset with functions that will manipulate grouping as raw objects:
+def grpSum(countryName:String, values: Iterator[Flight]) = {
+values.dropWhile(_.count < 5).map(x => (countryName, x))
+}
+	-- Here we are defining another function 									
+flights.groupByKey(x => x.DEST_COUNTRY_NAME).flatMapGroups(grpSum).show(5)
+	-- passing the same into a dataset to generate our required or desired output.
+Output:
+ 	| _1| _2|
++--------+--------------------+
+|Anguilla|[Anguilla,United ...|
+|Paraguay|[Paraguay,United ...|
+| Russia|[Russia,United St...|
+| Senegal|[Senegal,United S...|
+| Sweden|[Sweden,United St...|
++--------+--------------------+			
+def grpSum2(f:Flight):Integer = {
+1
+}
+	-- Defining another function 
+flights.groupByKey(x => x.DEST_COUNTRY_NAME).mapValues(grpSum2).count().take(5)
+	-- Passing it through a dataset.
+	-- We can also create a new manipulation and define how group should be reduced.
+def sum2(left:Flight, right:Flight) = {
+Flight(left.DEST_COUNTRY_NAME, null, left.count + right.count)
+}
+	-- Defining the function to reduce the group 
+flights.groupByKey(x => x.DEST_COUNTRY_NAME).reduceGroups((l, r) => sum2(l, r)).take(5)					
+	-- Here we are passing it into a dataset as we defined a function to achive a groupBykey operation in more effective way 
+	-- we should also understand that this is more expensive process than aggregation immediately after scanning especially because it ends up in the same end result 
+flights.groupBy("DEST_COUNTRY_NAME").count().explain
+== Physical Plan ==
+*HashAggregate(keys=[DEST_COUNTRY_NAME#1308], functions=[count(1)])
++- Exchange hashpartitioning(DEST_COUNTRY_NAME#1308, 200)
++- *HashAggregate(keys=[DEST_COUNTRY_NAME#1308], functions=[partial_count(1)])
++- *FileScan parquet [DEST_COUNTRY_NAME#1308] Batched: tru...
+	-- this will be the explain plan  and this also should motivate using datasets nly with user defined encoding surgically and only where is makes sense.
+	-- This might be the beggining of a big datapipeline or at end of the one.

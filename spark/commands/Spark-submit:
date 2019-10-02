@@ -1,0 +1,13 @@
+Spark-submit:
+spark-submit --class retail_db.GetRevenuePerOrder /Users/kartikeyan/IdeaProjects/spark-project-scala/target/scala-2.11/spark-project-scala_2.11-0.1.jar local /Users/kartikeyan/Desktop/data-master/retail_db/order_items/part-00000 /Users/kartikeyan/Desktop/data-master/retail_db/order_items/revenue_per_order
+
+
+
+Spark dependency in intellij SBT:
+libraryDependencies += "org.apache.spark" %% "spark-core" % "2.3.0"
+
+Setting java version to 8:
+export JAVA_HOME=$(/usr/libexec/java_home -v 1.8)
+
+sbt version 0.13
+scala version 2.11.12

@@ -1,0 +1,4 @@
+ProblemStatement:
+MapReduceProgram using a combiner
+ExecutedCommand:
+hadoop jar Wc.jar SanthoshiShetty.volume.WordCountWithCombiner /user/santhoshi/abc.txt /user/santhoshi/Output

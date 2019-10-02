@@ -1,0 +1,28 @@
+nameNode=hdfs://nn01.itversity.com:8020
+jobTracker=rm01.itversity.com:8050
+queueName=default
+examplesRoot=examples
+oozie.use.system.libpath=true
+oozie.wf.application.path=${nameNode}/user/santhoshi/examples/apps/hive/workflow.xml
+
+
+
+
+
+
+
+oozie.wf.application.path=hdfs://nn01.itversity.com:8020/user/santhoshi/oozie/workflows/wf.xml
+
+
+
+hive:
+oozie job -oozie http://nn01.itversity.com:11000/oozie -config /home/santhoshi/job.properties -run
+
+
+map-reduce:
+oozie job -oozie http://nn01.itversity.com:11000/oozie -config /home/santhoshi/oozieproperties/mapr/job.properties -run
+/home/santhoshi/oozieproperties/mapr/job.properties
+
+spark:
+oozie job -oozie http://nn01.itversity.com:11000/oozie -config /home/santhoshi/oozieproperties/sparkrr/job.properties -run
+/home/santhoshi/oozieproperties/sparkrr/job.properties

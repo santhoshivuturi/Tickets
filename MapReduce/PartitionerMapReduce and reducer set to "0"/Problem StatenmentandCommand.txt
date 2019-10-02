@@ -1,0 +1,5 @@
+ProblemStatment:
+In the Student dataset divide the result set into 3 files based on age where  age>=20 and age<20&&age >=30 and  age <30.
+Find out the max marks in each gender  in these 3 groups.
+Command:
+hadoop jar CustomPartitioner.jar sanmr.MyPartitionerDriverClass /user/santhoshi/lessons/data/partitioner/Student.txt /user/santhoshi/customp

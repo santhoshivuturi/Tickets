@@ -1,0 +1,4 @@
+udtf command:
+add jar /home/santhoshi/udftnews-original-hash-0.0.1-SNAPSHOT.jar;
+create temporary function funss as 'hive_project_udf.hash.Myudtf';
+SELECT funss(id) FROM phone;

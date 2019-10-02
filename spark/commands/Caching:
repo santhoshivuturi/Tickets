@@ -1,0 +1,9 @@
+Caching:
+The same principles apply for caching RDDs as for DataFrames and Datasets. You can either cache
+or persist an RDD. By default, cache and persist only handle data in memory. We can name it if we
+use the setName function that we referenced previously in this chapter:
+words.cache()
+
+We can specify a storage level as any of the storage levels in the singleton object:
+org.apache.spark.storage.StorageLevel, which are combinations of memory only; disk only;
+and separately, off heap.

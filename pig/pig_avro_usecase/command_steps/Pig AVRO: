@@ -1,0 +1,16 @@
+Pig AVRO:
+
+Step:1
+REGISTER 'hdfs://nn01.itversity.com:8020/user/santhoshi/Jar_avro_pig/avro-1.7.3.jar'
+REGISTER 'hdfs://nn01.itversity.com:8020/user/santhoshi/Jar_avro_pig/json-simple-1.1.jar'
+REGISTER 'hdfs://nn01.itversity.com:8020/user/santhoshi/Jar_avro_pig/piggybank.jar'
+REGISTER 'hdfs://nn01.itversity.com:8020/user/santhoshi/Jar_avro_pig/snappy-java-1.0.4.1.jar'
+
+
+Step:2
+avro = LOAD 'hdfs://nn01.itversity.com:8020/user/santhoshi/avro_sample/000000_0.avro' USING AvroStorage ();
+
+Step:3
+STORE avro INTO 'hdfs://nn01.itversity.com:8020/user/santhoshi/' USING AvroStorage ();
+
+

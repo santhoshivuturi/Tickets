@@ -1,0 +1,25 @@
+{
+  "type" : "record",
+  "name" : "SQOOPTABLES",
+  "doc" : "Sqoop import of SQOOPTABLES",
+  "fields" : [ {
+    "name" : "DEST_COUNTRY_NAME",
+    "type" : [ "null", "string" ],
+    "default" : null,
+    "columnName" : "DEST_COUNTRY_NAME",
+    "sqlType" : "12"
+  }, {
+    "name" : "ORIGIN_COUNTRY_NAME",
+    "type" : [ "null", "string" ],
+    "default" : null,
+    "columnName" : "ORIGIN_COUNTRY_NAME",
+    "sqlType" : "12"
+  }, {
+    "name" : "count",
+    "type" : [ "null", "int" ],
+    "default" : null,
+    "columnName" : "count",
+    "sqlType" : "4"
+  } ],
+  "tableName" : "SQOOPTABLES"
+}

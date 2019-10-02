@@ -1,0 +1,48 @@
+package sanmr;
+
+
+	import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.io.Text;
+	import org.apache.hadoop.mapreduce.Partitioner;
+
+
+	 public  class MyCustomPartitionerCode extends Partitioner<Text, Text>  {
+		@Override
+		public int getPartition(Text key, Text value, int numReduceTasks) {
+
+			String [] nameAgeScore = value.toString().split("\t");
+			String age = nameAgeScore[1];
+			int ageInt = Integer.parseInt(age);
+			
+			
+			//if the age is <20, assign partition 0
+			if(ageInt <=20){				
+				return 0;
+			}
+			//else if the age is between 20 and 50, assign partition 1
+			if(ageInt >20 && ageInt <=30){
+				
+				return 1 % numReduceTasks;
+			}
+			//otherwise assign partition 2
+			else
+				return 2 % numReduceTasks;
+			
+		}
+
+		public Configuration getConf() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		public void setConf(Configuration arg0) {
+			// TODO Auto-generated method stub
+			
+		}
+
+//		public int run(String[] arg0) throws Exception {
+//			// TODO Auto-generated method stub
+//			return 0;
+//		}
+	}
+

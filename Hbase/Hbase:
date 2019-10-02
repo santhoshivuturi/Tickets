@@ -1,0 +1,24 @@
+Hbase:
+
+Creating a table and also column family:
+create 'educationist' ,'guru99'
+educationist:table name
+guru99 :column family name
+
+
+describe educationist
+-- will describe the table.
+
+disable 'educationist'
+-- before dropping the table we need to disable it.
+
+enable 'educationist'
+-- enabling it.
+
+show_filters
+-- this gonna show filter if there are any.
+
+drop 'educationist'
+-- drops the table
+
+alter 'educationist', NAME='guru99_1', VERSIONS=>5

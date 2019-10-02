@@ -1,0 +1,243 @@
+Dataframes:
+-----------
+val df = spark.read.format("json").load("/Users/kartikeyan/Desktop/Textbookie/Spark-The-Definitive-Guide-master/data/flight-data/json")
+	-- Here we are reading file and creating a dataframe out of it and th format we are reading should be mentions first and that would be jason
+	-- After that we are using load API to literally load all the data which is present the path and the end directory.
+df.printSchema()
+	-- the above statement will show us the schema which is present in the Dataframe in this case it has picked the schema present the datasets jason files.
+spark.read.format("json").load("/Users/kartikeyan/Desktop/Textbookie/Spark-The-Definitive-Guide-master/data/flight-data/json/2015-summary.json").schema
+	-- Here we are loading the format and reading the schema by saying schema only not printSchema()
+Output:
+org.apache.spark.sql.types.StructType = ...
+StructType(StructField(DEST_COUNTRY_NAME,StringType,true),
+StructField(ORIGIN_COUNTRY_NAME,StringType,true),
+StructField(count,LongType,true))
+	-- Schema is StructType and made of number of fields called as StructFields
+	-- There StructField contains(NameOfColoumn,DataTypeOfColoumn,BooleanType) like above.
+	-- Boolean flag will specify if the coloumn contains missing or null values in them.
+	-- By this we are getting the metadata of the coloumn to specify. and in the metadat is somthing which describes the coloumn in a data set.
+	-- Schema can also contains complex StructType and if the Schema which mentioned doesn't match the data Spark will throw an error.
+
+import org.apache.spark.sql.types.{StructField, StructType, StringType, LongType}
+import org.apache.spark.sql.types.Metadata	 
+	-- Importing some packages to define the schema.
+val myManualSchema = StructType(Array(StructField("DEST_COUNTRY_NAME", StringType, true),StructField("ORIGIN_COUNTRY_NAME", StringType, true),StructField("count", LongType, false,Metadata.fromJson("{\"hello\":\"world\"}"))))
+	-- Here we are defining a schema manually for a dataframe 
+val df = spark.read.format("json").schema(myManualSchema).load("/Users/kartikeyan/Desktop/Textbookie/Spark-The-Definitive-Guide-master/data/flight-data/json/2015-summary.json")
+	-- Assigning the schema to the dataframe and then loading the data using the manual schema like above we need say .schema(SchemaName)	
+import org.apache.spark.sql.functions.{col, column}
+	-- We are importing the packages for coloumn function
+col("someColumnName")
+column("someColumnName")	
+	-- here we are using both coloumn functions and referring to a column.
+$"myColumn" (or) 'myColumn	
+	-- As we all know scala is something very beuatifull which will allow us to use or refer to the column name as above with $"columnName" 'ColoumnName
+df.col("count")
+	-- We are referring to coloumn in the DataFrame.
+(((col("someCol") + 5) * 200) - 6) < col("otherCol")
+	-- here we are using col to perform some operations in the dataframe
+import org.apache.spark.sql.functions.expr
+	-- We are importing packages to us Expr function
+expr("(((someCol + 5) * 200) - 6) < otherCol")
+	-- Here we are using the Expr function performa and operation on the same DF which is a DataFrame.
+spark.read.format("json").load("/Users/kartikeyan/Desktop/Textbookie/Spark-The-Definitive-Guide-master/data/flight-data/json/2015-summary.json").columns
+	-- although we can see all the coloumns if we still want to refer all the coloumns in a code we can simpy use DataFrame.columns.
+df.first()
+	-- this will give first row object or a first record of a DataFrame.
+import org.apache.spark.sql.Row
+	-- We are importing a pacake to import rows in a DataFrame 
+val myRow = Row("Hello", null, 1, false)
+	-- We are creatina row and assigning it to a value myRow
+myRow(0) // type Any
+myRow(0).asInstanceOf[String] // String
+myRow.getString(0) // String
+myRow.getInt(2) // Int
+	-- this how we acess rows in scala
+--------------
+val df = spark.read.format("json").load("/Users/kartikeyan/Desktop/Textbookie/Spark-The-Definitive-Guide-master/data/flight-data/json/2015-summary.json")
+	-- Here we are specifiying the format of the file and just loading the data from the file and converting into an DataFrame.
+df.createOrReplaceTempView("dfTable")
+	-- We are creating a temp table so that we acess and manipulate the using SQL views and tables
+	-- We can also create a DataFrame on fly by taking set of rows and converting then into DataFrames.
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.types.{StructField, StructType, StringType, LongType}
+	-- We are importing some packages to use SQL for queriying.
+val myManualSchema = new StructType(Array(new StructField("some", StringType, true),new StructField("col", StringType, true),new StructField("names", LongType, false)))	 				
+	-- Here we are just creating a schema manually and in schema we are defining the coloumn name and datatype which we are using
+val myRows = Seq(Row("Hello", null, 1L))
+	-- Here we are declaring or creating a row.
+val myRDD = spark.sparkContext.parallelize(myRows)
+	-- with the help of RDD's we are parllelising the data in the rows.
+val myDf = spark.createDataFrame(myRDD, myManualSchema)
+	-- We are creating a DataFrame simply adding the manual schema and row we have declared an converting them into a DataFrame using createDataFrame API
+myDf.show()
+	-- Will show us a Dataframe with the coloumn names which we have mentioned and then row which we have created in tabulat format like and DataFrame.
+val myDF = Seq(("Hello", 2, 1L)).toDF("col1", "col2", "col3")
+	-- We can also simply do it like below but we shouldn't do thos because this is not suggestable in production.
+SELECT DEST_COUNTRY_NAME FROM dfTable LIMIT 2
+	-- In SQL we are gonna comman like this if we want to acess a coloumns 	DEST_COUNTRY_NAME from table dfTable and the we wann see 2 records.
+df.select("DEST_COUNTRY_NAME").show(2)
+	-- Writting the same with the select command in spark. Dataframe.Select a coloumn .show(2) reocrds.
+df.select("DEST_COUNTRY_NAME", "ORIGIN_COUNTRY_NAME").show(2)
+	-- We can also select multiple coloumns using the same 
+import org.apache.spark.sql.functions.{expr, col, column}
+ 	-- We are importing a package to use the below thinsg	
+df.select("DEST_COUNTRY_NAME")
+	-- We can just acess the coloumn by using the select command
+df.select(col("DEST_COUNTRY_NAME"))
+	-- By just saying col infront of column name
+df.select(column("DEST_COUNTRY_NAME"))
+	-- By using the entire coloums declartion
+df.select('DEST_COUNTRY_NAME)
+	-- By using just ' in the starting of the coloumn name
+df.select($"DEST_COUNTRY_NAME")
+	-- By using a dollar
+df.select(expr("DEST_COUNTRY_NAME"))
+	-- by using an expr.
+df.select(df.col("DEST_COUNTRY_NAME"),col("DEST_COUNTRY_NAME"),column("DEST_COUNTRY_NAME"),'DEST_COUNTRY_NAME,$"DEST_COUNTRY_NAME",expr("DEST_COUNTRY_NAME")).show(2)								 	
+	-- Everything of above and all the declaration for acesssing the coloumns will result in the same coloumn we specified.
+df.select(col("DEST_COUNTRY_NAME"), "DEST_COUNTRY_NAME")
+	-- We cannot do this because it is gonna throw and complie time error.
+df.select(expr("DEST_COUNTRY_NAME AS destination")).show(2)
+	-- Here we are using select and expr to rename the country and we are renaming ot by using as keyword.
+	SELECT DEST_COUNTRY_NAME as destination FROM dfTable LIMIT 2
+df.select(expr("DEST_COUNTRY_NAME as destination").alias("DEST_COUNTRY_NAME")).show(2)			
+	-- here we are expr and changing the country name by using an as keyword and then changigng it back to the orignal name by using alias
+df.selectExpr("DEST_COUNTRY_NAME as newColumnName", "DEST_COUNTRY_NAME").show(2)
+	-- so here for multie purpose spark help us combine select and Expr and we can do wonders with this
+df.selectExpr("*", // include all original columns"(DEST_COUNTRY_NAME = ORIGIN_COUNTRY_NAME) as withinCountry").show(2)
+	-- so here we are selectExpr as we are doing multiple operations together. to select everything from the complete table we have used a "*"
+	-- After that we have used a condition to see whether the DEST_COUNTRY_NAME is equal ORIGIN_COUNTRY_NAME and this gonna return true and false and then we are naming this entire thing as and coloumns withinCountry
+df.createOrReplaceTempView("dfTable")
+	-- We are creating and temptable to acess the dataframe using SQL commands.
+spark.sql("SELECT *, (DEST_COUNTRY_NAME = ORIGIN_COUNTRY_NAME) as withinCountry FROM dfTable")
+	-- Here we are checking if DEST_COUNTRY_NAME is equal to the ORIGIN_COUNTRY_NAME an it will give true or false and we are saving that information on to the different coloumns name  withinCountry
+df.selectExpr("avg(count)", "count(distinct(DEST_COUNTRY_NAME))").show(2)
+	-- Here we are getting Average of count and the then count of DEST_COUNTRY_NAME but which should be disctinct.
+spark.sql("SELECT avg(count), count(distinct(DEST_COUNTRY_NAME)) FROM dfTable LIMIT 2")		
+	-- Here we are doing the same that we did using the DataFrames we have taken the avg of the count coloumns and then we are counting the countired in DEST_COUNTRY_NAME and we are only counting distinct things or countries.
+df.withColumn("numberOne", lit(1)).show(2)
+	-- Here we are creating another call with a name numberOne and then we will assign 1 to all coloumns 
+df.withColumn("withinCountry", expr("ORIGIN_COUNTRY_NAME == DEST_COUNTRY_NAME")).show(2)
+	-- Here we are using withcoloumn function and then assigning it boolean flags for checking if the country name in the above both columns are equal
+	-- Here the with coloumn function takes 2 parametere 
+					1.Coloumn Name 
+					2.Expr that created a value for the given row in a DataFrame.
+df.withColumn("Destination", expr("DEST_COUNTRY_NAME")).columns
+	-- here we can also rename the coloumn using the with coloumn function and Expr and we that in above example
+df.withColumnRenamed("DEST_COUNTRY_NAME", "dest").columns
+	-- This an another way of renaming a coloumn and  here we are using a function which is called as withColumnRenamed and this will take 2 parameters and that would be Original coloumn name and the name of the coloumn which you wannaa change into
+val dfWithLongColName = df.withColumn("This Long Column-Name",expr("ORIGIN_COUNTRY_NAME"))									
+	-- Here we are creating a coloumn name with space and all we can remove them using a backtick like below.
+dfWithLongColName.selectExpr("`This Long Column-Name`","`This Long Column-Name` as `new col`").show(2)
+	-- here we are using back ticks with a coloumn and we can avoid sapces which is easy and we are also chnaging the name of the column.
+dfWithLongColName.select(col("This Long Column-Name")).columns
+	-- here also we are doing the same thing 
+set spark.sql.caseSensitive true
+	-- Defaultly spark is case insensitive but if we wanna change that we need to set the above thing to true.
+dfWithLongColName.select(col("This Long Column-Name")).columns
+df.drop("ORIGIN_COUNTRY_NAME").columns
+	-- If we want to delete a coloumn then we can use this drop function 
+dfWithLongColName.drop("ORIGIN_COUNTRY_NAME", "DEST_COUNTRY_NAME")
+	-- We can drop multiple columns at a time by passing multiple column names.
+df.withColumn("count2", col("count").cast("long"))
+	-- We can change a column type by casting and that can be don by cast
+	-- Here we are creating a column and then we are filling it with the cast of the column count.
+spark.sql("SELECT *, cast(count as long) AS count2 FROM dfTable")
+	-- we are doing the same in the SQL format.
+df.filter('count < 2).show(2)
+	-- here we are using a filter operation on column count to find out thw rows which are having the count value <2
+SELECT * FROM dfTable WHERE count < 2 LIMIT 2
+	-- We are doing the same in SQL
+df.filter(('count < 2)&&('DEST_COUNTRY_NAME =!= "Croatia")).show()
+	-- If wanna use filter with multipl columns then we gotta use overloaded filter with a "&&" between the 2 columns
+df.filter(('count < 2)&&('DEST_COUNTRY_NAME === "Kosovo")).show()
+	-- while using == we use 3 === instead of 2
+df.where('count<2).where(('ORIGIN_COUNTRY_NAME) =!= "Croatia").show(2)
+	-- using where instead of filter and doing sperately on multiple columns like above
+spark.sql(SELECT * FROM dfTable WHERE count < 2 AND ORIGIN_COUNTRY_NAME != "Croatia"LIMIT 2)
+	-- we are using SQL for performing the same operation we did with where and filter.
+df.select('DEST_COUNTRY_NAME,'ORIGIN_COUNTRY_NAME).distinct().count()
+	-- Here we are using distinct to take out the duplicates from the above columns
+df.select("ORIGIN_COUNTRY_NAME").distinct().count()
+	-- Here we are doing distinct on the single columns.
+spark.sql("SELECT COUNT(DISTINCT ORIGIN_COUNTRY_NAME) FROM dfTable")
+	-- SQL way of using Distinct on a dataframe
+val seed = 5
+val withReplacement = false
+val fraction = 0.5
+df.sample(withReplacement, fraction, seed).count()
+	-- This is somthing called sampling 
+	-- 	here with replacement mean the replacemnet between the element allowed suppose we have 12,13 then (12,12),(12,13),(13,13) is allowed with out replacement means (12,13) is possible the both values cannot be same
+	-- fraction mean if we have 100 records or rows then we want to sample 10 out of hundered we need to mention it as 0.10 and if we want 5 then we should say 0.5 the percentage of out of 100 is what we are considering here.
+val dataFrames = df.randomSplit(Array(0.25, 0.75), seed)
+	-- here we are splitting the entire data frame into 2 parts and out of that one part is 0.25 and another part is 0.75 and the seed will be seed.
+import org.apache.spark.sql.Row:
+	-- here we are importing a package to add rows to a DataFrame
+val schema = df.schema
+	-- This means that we are first taking the schema of the dataframe 
+	-- When we say df.schema it is gonna be like this org.apache.spark.sql.types.StructType = StructType(StructField(DEST_COUNTRY_NAME,StringType,true), StructField(ORIGIN_COUNTRY_NAME,StringType,true), StructField(count,LongType,true))
+	-- So in the above statement we are assigning the schema of DataFrame df to a variable saying val schema = df.schema()
+val newRows = Seq(Row("New Country", "Other Country", 5L),Row("New Country 2", "Other Country 3", 1L))	
+	-- Here we are assigning creating a row like normally we would and giving each coloumn of record with and value 
+	-- and after creating the rows we are assigning the same thing to a variable name newRows
+val parallelizedRows = spark.sparkContext.parallelize(newRows)
+	-- so as we know that we will not be able assign the rows directly the dataframe we are parallelising them.
+	-- in this case we are parallelising the variable to which we have assigned the rows to.
+val newDF = spark.createDataFrame(parallelizedRows, schema)
+	-- Here we are creating a nre DataFrame with the rows which have created and the schema which we have generated and creating a new DataFrame with rows and schema.
+df.union(newDF)
+	-- here we are performing a uniion operation on the old df which we have on the newDF which we have by taking the union function.
+df.union(newDF).where("count = 1").where($"ORIGIN_COUNTRY_NAME" =!= "United States").show() 	
+	-- here we are performing a union operation in the first step.
+	-- and then to check the column which we have added are there we are gonn do where($"ORIGIN_COUNTRY_NAME" =!= "United States").show().
+	-- this will show the rows which we have added.
+df.sort("count").show(5)
+	-- here we are sorting the dataframe's column count
+	-- and here we are not specifying any kind of ordering so it will be ordered defaultly in ascending order.
+df.sort('count,'DEST_COUNTRY_NAME).show()
+	-- here we are sorting the 2 column of a dataframe using the sort and even in this we have not mentioned any kind of sort so it will do in natuarl ascending order
+df.orderBy('count, 'DEST_COUNTRY_NAME).show(5)	
+	-- here we are using orderBy function instead of sort and ordering the count and DEST_COUNTRY_NAME column in the dataframe
+import org.apache.spark.sql.functions.{desc, asc}
+	-- here we are importing a package to use desc and asc for sorting the elements.
+df.sort('count asc).show()
+	-- here we are sorting the count column in asc that is in ascending order.
+df.sort('count desc).show()
+	-- here we are sorting the count column in desc order.
+df.orderBy(desc('count), 'DEST_COUNTRY_NAME).show()
+	-- here we are using orderBy and on count and DEST_COUNTRY_NAME
+spark.sql("SELECT * FROM dfTable ORDER BY count DESC, DEST_COUNTRY_NAME ASC LIMIT 2)	 						
+	-- SQL way of doing the same thing as the above.
+asc_nulls_first, desc_nulls_first, asc_nulls_last, or desc_nulls_last	
+	-- we can use all this to specify to where we use nulls 
+df.sortWithinPartitions('count)	
+	-- This is used when we only want to sort within a partition.
+df.limit(5).show()
+	-- this will only take 5 rows from a partition
+spark.sql("SELECT * FROM dfTable LIMIT 6")
+	-- SQL way of representing the same.
+df.rdd.getNumPartitions
+	-- We are checking the number of partition in the df. or something like that. the result would be 1
+df.repartition(5)
+	-- when we do this it is turned into 5 and when we check we will get 5.
+df.repartition(col("DEST_COUNTRY_NAME"))
+	-- If we are gonna use the column like so many times it easy or useful to partition on the column like above.
+df.repartition(5, col("DEST_COUNTRY_NAME"))
+	-- we can also specify the column and also the number of the partition which we want to do on that column.
+df.repartition(5, col("DEST_COUNTRY_NAME")).coalesce(2)
+	-- here we are using coalesce to combine the partition which we have did.
+val collectDF = df.limit(10)
+	-- here we are taking the 10 rows of the dataframe and then assigning them to a variable.
+collectDF.show() 
+	-- then we are performing the show on the collectDF
+collectDF.show(5, false)
+	-- same
+collectDF.collect()
+	-- this will collect all the rows if there are many and will show only limited on the console.
+toLocalIterator
+	-- This is something will bring each partition into the driver and perform the operation if we have 5 partition then it is gonna bring 1 after 1 after 1 into the driver.
+collectDF.toLocalIterator()
+	-- this the we use the above 
+	-- any collect of data is an expensive operation and if we are using any of the operation like collect on a dataset which is huge the node will crash 
+	-- even to LocalIterator is also expensive and if the partition is big enough this is also gonna crash our node.

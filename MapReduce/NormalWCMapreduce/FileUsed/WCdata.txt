@@ -1,0 +1,6 @@
+Hi I'm Santhoshi and I'm learning Hadoop and 
+I have finished Hadoop and It was very easy and very understandable but
+Lot of the Hadoop components which I have learned are Deprecated and are not in use 
+so now I'm learning spark with scala and python. Which is also i'm finding it easy but
+let's see what happens.
+Waiting for my job santhoshi vuturi Alias santhoshi shetty (san)

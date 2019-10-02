@@ -1,0 +1,24 @@
+package sanmr;
+
+import java.io.IOException;
+
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Partitioner;
+
+public class CustomPartitionerMapper extends Mapper<LongWritable,Text,Text,Text> {
+	
+	public void map (LongWritable key,Text values,Context context) throws IOException,InterruptedException{
+		
+		String parts[]=values.toString().split(",");
+		
+		String name=parts[0];
+		String gender=parts[1];
+		String age=parts[2];
+		String marks=parts[3];
+		String nameAgeMarks=name+'\t'+age+'\t'+marks;
+		context.write(new Text(gender),new Text(nameAgeMarks));
+	}
+
+}

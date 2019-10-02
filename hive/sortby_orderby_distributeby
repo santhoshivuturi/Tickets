@@ -1,0 +1,19 @@
+SORT BY
+Hive uses the columns in SORT BY to sort the rows before feeding the rows to a reducer. The sort order will be dependent on the column types. If the column is of numeric type, then the sort order is also in numeric order. If the column is of string type, then the sort order will be lexicographical orderOrdering : It orders data at each of ‘N’ reducers , but each reducer can have overlapping ranges of data.
+Outcome : N or more sorted files with overlapping ranges.
+
+
+
+
+ORDER BY:
+This is similar to ORDER BY in SQL Language.
+In Hive, ORDER BY guarantees total ordering of data, but for that it has to be passed on to a single reducer, which is normally performance intensive and therefore in strict mode, hive makes it compulsory to use LIMIT with ORDER BY so that reducer doesn’t get overburdened.
+Ordering : Total Ordered data.
+Outcome : Single output i.e. fully ordered.
+
+
+DISTRIBUTE BY
+It ensures each of N reducers gets non-overlapping ranges of column, but doesn’t sort the output of each reducer. You end up with N or more unsorted files with non-overlapping ranges.
+
+
+

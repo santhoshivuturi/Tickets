@@ -1,0 +1,17 @@
+Acessing hive table from spark-shell:
+
+Set these things:
+-----------------
+import org.apache.spark.SparkConf
+import org.apache.spark.SparkContext
+import org.apache.spark.sql.hive.HiveContext
+val conf = new SparkConf().setAppName("Test").setMaster("yarn-client")
+val sc = new SparkContext(conf)
+val sqlContext = new HiveContext(sc)
+import sqlContext.implicits._
+
+
+Acessing the hive table by mentioning databases:
+val san = spark.sql(""" select * from tickets_hive.bike_data_ondata limit 10 """)
+
+san.show(5)

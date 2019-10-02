@@ -1,0 +1,138 @@
+Accumulators:
+Accumulators (Figure 14-2), Spark’s second type of shared variable, are a way of updating a value
+inside of a variety of transformations and propagating that value to the driver node in an efficient and
+fault-tolerant way.
+Figure 14-2. Accumulator variable
+Accumulators provide a mutable variable that a Spark cluster can safely update on a per-row basis.
+You can use these for debugging purposes (say to track the values of a certain variable per partition in
+order to intelligently use it over time) or to create low-level aggregation. Accumulators are variables
+that are “added” to only through an associative and commutative operation and can therefore be
+efficiently supported in parallel. You can use them to implement counters (as in MapReduce) or sums.
+Spark natively supports accumulators of numeric types, and programmers can add support for new
+types.
+For accumulator updates performed inside actions only, Spark guarantees that each task’s update to
+the accumulator will be applied only once, meaning that restarted tasks will not update the value. In
+transformations, you should be aware that each task’s update can be applied more than once if tasks
+or job stages are reexecuted.
+Accumulators do not change the lazy evaluation model of Spark. If an accumulator is being updated
+within an operation on an RDD, its value is updated only once that RDD is actually computed (e.g.,
+when you call an action on that RDD or an RDD that depends on it). Consequently, accumulator
+updates are not guaranteed to be executed when made within a lazy transformation like map().
+Accumulators can be both named and unnamed. Named accumulators will display their running
+results in the Spark UI, whereas unnamed ones will not.
+Basic Example
+Let’s experiment by performing a custom aggregation on the Flight dataset that we created earlier in
+the book. In this example, we will use the Dataset API as opposed to the RDD API, but the extension
+is quite similar:
+// in Scala
+case class Flight(DEST_COUNTRY_NAME: String,
+ORIGIN_COUNTRY_NAME: String, count: BigInt)
+val flights = spark.read
+.parquet("/data/flight-data/parquet/2010-summary.parquet")
+.as[Flight]
+# in Python
+flights = spark.read\
+.parquet("/data/flight-data/parquet/2010-summary.parquet")
+Now let’s create an accumulator that will count the number of flights to or from China. Even though
+we could do this in a fairly straightfoward manner in SQL, many things might not be so
+straightfoward. Accumulators provide a programmatic way of allowing for us to do these sorts of
+counts. The following demonstrates creating an unnamed accumulator:
+// in Scala
+import org.apache.spark.util.LongAccumulator
+val accUnnamed = new LongAccumulator
+val acc = spark.sparkContext.register(accUnnamed)
+# in Python
+accChina = spark.sparkContext.accumulator(0)
+Our use case fits a named accumulator a bit better. There are two ways to do this: a short-hand
+method and a long-hand one. The simplest is to use the SparkContext. Alternatively, we can
+instantiate the accumulator and register it with a name:
+// in Scala
+val accChina = new LongAccumulator
+val accChina2 = spark.sparkContext.longAccumulator("China")
+spark.sparkContext.register(accChina, "China")
+We specify the name of the accumulator in the string value that we pass into the function, or as the
+second parameter into the register function. Named accumulators will display in the Spark UI,
+whereas unnamed ones will not.
+The next step is to define the way we add to our accumulator. This is a fairly straightforward
+function:
+// in Scala
+def accChinaFunc(flight_row: Flight) = {
+val destination = flight_row.DEST_COUNTRY_NAME
+val origin = flight_row.ORIGIN_COUNTRY_NAME
+if (destination == "China") {
+accChina.add(flight_row.count.toLong)
+}
+if (origin == "China") {
+accChina.add(flight_row.count.toLong)
+}
+}
+# in Python
+def accChinaFunc(flight_row):
+destination = flight_row["DEST_COUNTRY_NAME"]
+origin = flight_row["ORIGIN_COUNTRY_NAME"]
+if destination == "China":
+accChina.add(flight_row["count"])
+if origin == "China":
+accChina.add(flight_row["count"])
+Now, let’s iterate over every row in our flights dataset via the foreach method. The reason for this is
+because foreach is an action, and Spark can provide guarantees that perform only inside of actions.
+The foreach method will run once for each row in the input DataFrame (assuming that we did not
+filter it) and will run our function against each row, incrementing the accumulator accordingly:
+// in Scala
+flights.foreach(flight_row => accChinaFunc(flight_row))
+# in Python
+flights.foreach(lambda flight_row: accChinaFunc(flight_row))
+This will complete fairly quickly, but if you navigate to the Spark UI, you can see the relevant value,
+on a per-Executor level, even before querying it programmatically, as demonstrated in Figure 14-3.
+Figure 14-3. Executor Spark UI
+Of course, we can query it programmatically, as well. To do this, we use the value property:
+// in Scala
+accChina.value // 953
+# in Python
+accChina.value # 953
+
+
+
+
+
+Custom Accumulators:
+Although Spark does provide some default accumulator types, sometimes you might want to build
+your own custom accumulator. In order to do this you need to subclass the AccumulatorV2 class.
+There are several abstract methods that you need to implement, as you can see in the example that
+follows. In this example, you we will add only values that are even to the accumulator. Although this
+is again simplistic, it should show you how easy it is to build up your own accumulators:
+// in Scala
+import scala.collection.mutable.ArrayBuffer
+import org.apache.spark.util.AccumulatorV2
+val arr = ArrayBuffer[BigInt]()
+class EvenAccumulator extends AccumulatorV2[BigInt, BigInt] {
+private var num:BigInt = 0
+def reset(): Unit = {
+this.num = 0
+}
+def add(intValue: BigInt): Unit = {
+if (intValue % 2 == 0) {
+this.num += intValue
+}
+}
+def merge(other: AccumulatorV2[BigInt,BigInt]): Unit = {
+this.num += other.value
+}
+def value():BigInt = {
+this.num
+}
+def copy(): AccumulatorV2[BigInt,BigInt] = {
+new EvenAccumulator
+}
+def isZero():Boolean = {
+this.num == 0
+}
+}
+val acc = new EvenAccumulator
+val newAcc = sc.register(acc, "evenAcc")
+// in Scala
+acc.value // 0
+flights.foreach(flight_row => acc.add(flight_row.count))
+acc.value // 31390
+If you are predominantly a Python user, you can also create your own custom accumulators by
+subclassing AccumulatorParam and using it as we saw in the previous example.

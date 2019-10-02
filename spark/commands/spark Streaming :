@@ -1,0 +1,25 @@
+spark Streaming :
+
+StructuredStreaming:	
+val streamingDataFrame = spark.readStream.schema(staticSchema).option("maxFilesPerTrigger", 1).format("csv").option("header", "true").load("/Users/kartikeyan/Desktop/Textbookie/Spark-The-Definitive-Guide-master/data/retail-data/by-day")
+	-- readStream is something for reading a file.
+	-- maxFilesPerTrigger (default: no max limit): sets the maximum number of new files to be considered in every trigger. Sets the max number files to be triggered in a Kickoff or a trigger 1 mean 1 and 10 means 10.
+
+streamingDataFrame.isStreaming
+	-- we can check if our data is streaming and it returns true.
+
+val purchaseByCustomerPerHour = streamingDataFrame.selectExpr("CustomerId","(UnitPrice * Quantity) as total_cost","InvoiceDate").groupBy($"CustomerId", window($"InvoiceDate", "1 day")).sum("total_cost")
+	-- Here we want to know the amount spent by customer in a do so we are multiplying unitprice with quantity and naming it as total cost
+	-- Grouping all the customer detils by a single day (we are using the window function and metioning for how manydays)
+	-- then summating then summing the total_cost column
+
+
+purchaseByCustomerPerHour.writeStream.format("memory").queryName("customer_purchases").outputMode("complete").start()
+	-- Here we are writing the data we streamed and performed some data processing operations using writeStream options 
+	-- after writeStream we need to understand where which should write i.e. in Memory(RAM) (or) MemorySink 
+	-- We are also giving a name to the data or dataframe which we are writting as customer_purchases
+	-- complete is all the counts should be in the table
+	-- Start() - when we start the stream we can run the queries against the data to debug or to check how it looks like before writting it into production sink.
+	-- Here we are writting to a memorysink and we don't wanna write and see on console we can do as below:
+purchaseByCustomerPerHour.writeStream.format("console").queryName("customer_purchases_2").outputMode("complete").start()
+	-- Anyways we are not gonns use any of this in production but we can do this before going to production for understanding.

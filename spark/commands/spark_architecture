@@ -1,0 +1,112 @@
+
+The Spark driver
+The driver is the process “in the driver seat” of your Spark Application. It is the controller of the
+execution of a Spark Application and maintains all of the state of the Spark cluster (the state and
+tasks of the executors). It must interface with the cluster manager in order to actually get physical
+resources and launch executors. At the end of the day, this is just a process on a physical machine
+that is responsible for maintaining the state of the application running on the cluster.
+The Spark executors
+Spark executors are the processes that perform the tasks assigned by the Spark driver. Executors
+have one core responsibility: take the tasks assigned by the driver, run them, and report back their
+state (success or failure) and results. Each Spark Application has its own separate executor
+processes.
+The cluster manager
+The Spark Driver and Executors do not exist in a void, and this is where the cluster manager
+comes in. The cluster manager is responsible for maintaining a cluster of machines that will run
+your Spark Application(s). Somewhat confusingly, a cluster manager will have its own “driver”
+(sometimes called master) and “worker” abstractions. The core difference is that these are tied to
+physical machines rather than processes (as they are in Spark). Figure 15-1 shows a basic cluster
+setup. The machine on the left of the illustration is the Cluster Manager Driver Node. The circles
+represent daemon processes running on and managing each of the individual worker nodes. There
+is no Spark Application running as of yet—these are just the processes from the cluster manager.
+Figure 15-1. A cluster driver and worker (no Spark Application yet)
+When it comes time to actually run a Spark Application, we request resources from the cluster
+manager to run it. Depending on how our application is configured, this can include a place to run the
+Spark driver or might be just resources for the executors for our Spark Application. Over the course
+of Spark Application execution, the cluster manager will be responsible for managing the underlying
+machines that our application is running on.
+Spark currently supports three cluster managers: a simple built-in standalone cluster manager, Apache
+Mesos, and Hadoop YARN. However, this list will continue to grow, so be sure to check the
+documentation for your favorite cluster manager.
+Now that we’ve covered the basic components of an application, let’s walk through one of the first
+choices you will need to make when running your applications: choosing the execution mode.
+Execution Modes
+An execution mode gives you the power to determine where the aforementioned resources are
+physically located when you go to run your application. You have three modes to choose from:
+Cluster mode
+Client mode
+Local mode
+We will walk through each of these in detail using Figure 15-1 as a template. In the following section,
+rectangles with solid borders represent Spark driver process whereas those with dotted borders
+represent the executor processes.
+Cluster mode
+Cluster mode is probably the most common way of running Spark Applications. In cluster mode, a
+user submits a pre-compiled JAR, Python script, or R script to a cluster manager. The cluster manager
+then launches the driver process on a worker node inside the cluster, in addition to the executor
+processes. This means that the cluster manager is responsible for maintaining all Spark Application–
+related processes. Figure 15-2 shows that the cluster manager placed our driver on a worker node
+and the executors on other worker nodes.
+Figure 15-2. Spark’s cluster mode
+Client mode
+Client mode is nearly the same as cluster mode except that the Spark driver remains on the client
+machine that submitted the application. This means that the client machine is responsible for
+maintaining the Spark driver process, and the cluster manager maintains the executor processses. In
+Figure 15-3, we are running the Spark Application from a machine that is not colocated on the cluster.
+These machines are commonly referred to as gateway machines or edge nodes. In Figure 15-3, you
+can see that the driver is running on a machine outside of the cluster but that the workers are located
+on machines in the cluster.
+Figure 15-3. Spark’s client mode
+Local mode
+Local mode is a significant departure from the previous two modes: it runs the entire Spark
+Application on a single machine. It achieves parallelism through threads on that single machine. This
+is a common way to learn Spark, to test your applications, or experiment iteratively with local
+development. However, we do not recommend using local mode for running production applications.
+The Life Cycle of a Spark Application (Outside Spark)
+This chapter has thus far covered the vocabulary necessary for discussing Spark Applications. It’s
+now time to talk about the overall life cycle of Spark Applications from “outside” the actual Spark
+code. We will do this with an illustrated example of an application run with spark-submit
+(introduced in Chapter 3). We assume that a cluster is already running with four nodes, a driver (not a
+Spark driver but cluster manager driver) and three worker nodes. The actual cluster manager does not
+matter at this point: this section uses the vocabulary from the previous section to walk through a stepby-step Spark Application life cycle from initialization to program exit.
+NOTE
+This section also makes use of illustrations and follows the same notation that we introduced previously. Additionally, we
+now introduce lines that represent network communication. Darker arrows represent communication by Spark or Sparkrelated processes, whereas dashed lines represent more general communication (like cluster management communication).
+Client Request
+The first step is for you to submit an actual application. This will be a pre-compiled JAR or library.
+At this point, you are executing code on your local machine and you’re going to make a request to the
+cluster manager driver node (Figure 15-4). Here, we are explicitly asking for resources for the Spark
+driver process only. We assume that the cluster manager accepts this offer and places the driver onto
+a node in the cluster. The client process that submitted the original job exits and the application is off
+and running on the cluster.
+Figure 15-4. Requesting resources for a driver
+To do this, you’ll run something like the following command in your terminal:
+./bin/spark-submit \
+--class <main-class> \
+--master <master-url> \
+--deploy-mode cluster \
+--conf <key>=<value> \
+... # other options
+<application-jar> \
+[application-arguments]
+Launch
+Now that the driver process has been placed on the cluster, it begins running user code (Figure 15-5).
+This code must include a SparkSession that initializes a Spark cluster (e.g., driver + executors). The
+SparkSession will subsequently communicate with the cluster manager (the darker line), asking it to
+launch Spark executor processes across the cluster (the lighter lines). The number of executors and
+their relevant configurations are set by the user via the command-line arguments in the original
+spark-submit call.
+Figure 15-5. Launching the Spark Application
+The cluster manager responds by launching the executor processes (assuming all goes well) and sends
+the relevant information about their locations to the driver process. After everything is hooked up
+correctly, we have a “Spark Cluster” as you likely think of it today.
+Execution
+Now that we have a “Spark Cluster,” Spark goes about its merry way executing code, as shown in
+Figure 15-6. The driver and the workers communicate among themselves, executing code and moving
+data around. The driver schedules tasks onto each worker, and each worker responds with the status
+of those tasks and success or failure. (We cover these details shortly.)
+Figure 15-6. Application execution
+Completion
+After a Spark Application completes, the driver processs exits with either success or failure
+(Figure 15-7). The cluster manager then shuts down the executors in that Spark cluster for the driver.
+At this point, you can see the success or failure of the Spark Application by asking the cluster
+manager for this information.

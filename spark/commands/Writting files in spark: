@@ -1,0 +1,13 @@
+Writting files in spark:
+
+Writting Avro file
+dataFrame.write.avro("/tmp/output")
+
+Writting parquet:
+dataDF.write.parquet("data.parquet")
+
+Writting json file:
+ds.write().json("data/out_employees/");
+
+wriiting textfile or csv with custome delimiter:
+df.write.mode(SaveMode.Overwrite).option("delimiter", "\u0001").csv("outputCSV")

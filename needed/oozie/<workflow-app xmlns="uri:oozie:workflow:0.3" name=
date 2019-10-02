@@ -1,0 +1,24 @@
+<workflow-app xmlns="uri:oozie:workflow:0.3" name="sample_oozie_shell_action">
+    <start to="shell_sample_action"/>
+    <action name="shell_sample_action">
+      <shell xmlns="uri:oozie:shell-action:0.1">
+      <job-tracker>${jobTracker}</job-tracker>
+      <name-node>${nameNode}</name-node>
+      <configuration>
+       <property>
+        <name>mapred.job.queue.name</name>
+        <value>${queue_Name}</value>
+       </property>
+      </configuration>
+      <exec>hive_test_run.sh</exec>
+      <env-var>HADOOP_USER_NAME=santhoshi</env-var>
+      <file>/user/santhoshi/oozie/shell_scripts/hive_test_run.sh#hive_test_run.sh</file>
+      </shell>
+     <ok to="end"/>
+     <error to="kill"/>
+    </action>
+    <kill name="kill">
+      <message>Error message:[${wf:errorMessage(wf:lastErrorNode())}]</message>
+    </kill>
+    <end name="end"/>
+</workflow-app>

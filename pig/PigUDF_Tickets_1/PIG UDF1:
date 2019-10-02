@@ -1,0 +1,21 @@
+PIG UDF1:
+Step:1
+REGISTER 'hdfs://nn01.itversity.com:8020/user/santhoshi/piguses-0.0.1-SNAPSHOT.jar'
+
+Step:2
+DEFINE sample_eval sample_eval();
+
+Step:3
+emp_data = LOAD 'hdfs://nn01.itversity.com:8020/user/santhoshi/pigudfsfolder/emp1.txt' USING PigStorage(',') as (id:int, name:chararray, age:int, city:chararray);
+
+
+Step:4
+DUMP emp_data;
+
+Step:5
+Upper_case = FOREACH emp_data GENERATE  my_project.piguses.Sample_Eval(name);
+
+Step:6
+Dump Upper_case;
+
+

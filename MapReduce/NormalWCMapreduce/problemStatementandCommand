@@ -1,0 +1,4 @@
+problemStatement:
+NormalWordCount Mapreduce Java program
+Command:
+hadoop jar party.jar SanthoshiShetty.volume.WordCount /user/santhoshi/SparkExample.txt /user/santhoshi/foldy

@@ -1,0 +1,69 @@
+Broadcast :
+Broadcast variables are a way you can share an immutable value efficiently around the cluster
+without encapsulating that variable in a function closure. The normal way to use a variable in your
+driver node inside your tasks is to simply reference it in your function closures (e.g., in a map
+operation), but this can be inefficient, especially for large variables such as a lookup table or a
+machine learning model. The reason for this is that when you use a variable in a closure, it must be
+deserialized on the worker nodes many times (one per task). Moreover, if you use the same variable
+in multiple Spark actions and jobs, it will be re-sent to the workers with every job instead of once.
+This is where broadcast variables come in. Broadcast variables are shared, immutable variables that
+are cached on every machine in the cluster instead of serialized with every single task. The canonical
+use case is to pass around a large lookup table that fits in memory on the executors and use that in a
+function, as illustrated in Figure 14-1.
+Figure 14-1. Broadcast variables
+For example, suppose that you have a list of words or values:
+// in Scala
+val myCollection = "Spark The Definitive Guide : Big Data Processing Made Simple"
+.split(" ")
+val words = spark.sparkContext.parallelize(myCollection, 2)
+# in Python
+my_collection = "Spark The Definitive Guide : Big Data Processing Made Simple"\
+.split(" ")
+words = spark.sparkContext.parallelize(my_collection, 2)
+You would like to supplement your list of words with other information that you have, which is many
+kilobytes, megabytes, or potentially even gigabytes in size. This is technically a right join if we
+thought about it in terms of SQL:
+// in Scala
+val supplementalData = Map("Spark" -> 1000, "Definitive" -> 200,
+"Big" -> -300, "Simple" -> 100)
+# in Python
+supplementalData = {"Spark":1000, "Definitive":200,
+"Big":-300, "Simple":100}
+We can broadcast this structure across Spark and reference it by using suppBroadcast. This value is
+immutable and is lazily replicated across all nodes in the cluster when we trigger an action:
+// in Scala
+val suppBroadcast = spark.sparkContext.broadcast(supplementalData)
+# in Python
+suppBroadcast = spark.sparkContext.broadcast(supplementalData)
+We reference this variable via the value method, which returns the exact value that we had earlier.
+This method is accessible within serialized functions without having to serialize the data. This can
+save you a great deal of serialization and deserialization costs because Spark transfers data more
+efficiently around the cluster using broadcasts:
+// in Scala
+suppBroadcast.value
+# in Python
+suppBroadcast.value
+Now we could transform our RDD using this value. In this instance, we will create a key–value pair
+according to the value we might have in the map. If we lack the value, we will simply replace it with
+0:
+// in Scala
+words.map(word => (word, suppBroadcast.value.getOrElse(word, 0)))
+.sortBy(wordPair => wordPair._2)
+.collect()
+# in Python
+words.map(lambda word: (word, suppBroadcast.value.get(word, 0)))\
+.sortBy(lambda wordPair: wordPair[1])\
+.collect()
+This returns the following value in Python and the same values in an array type in Scala:
+[('Big', -300),
+('The', 0),
+...
+('Definitive', 200),
+('Spark', 1000)]
+The only difference between this and passing it into the closure is that we have done this in a much
+more efficient manner (Naturally, this depends on the amount of data and the number of executors. For
+very small data (low KBs) on small clusters, it might not be). Although this small dictionary probably
+is not too large of a cost, if you have a much larger value, the cost of serializing the data for every
+task can be quite significant.
+One thing to note is that we used this in the context of an RDD; we can also use this in a UDF or in a
+Dataset and achieve the same result.

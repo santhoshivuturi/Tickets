@@ -1,0 +1,21 @@
+set hive.exec.dynamic.partition=true;
+set hive.exec.dynamic.partition.mode=nonstrict;
+set hive.exec.max.dynamic.partitions=1000;
+set hive.exec.max.dynamic.partitions.pernode=1000;
+set hive.enforce.bucketing = true;
+
+hadoop fs -mkdir -p /user/santhoshi/hive/bucketing_table/
+hadoop fs -put real_state.csv /user/santhoshi/hive/bucketing_table/
+hadoop fs -mkdir -p /user/santhoshi/hive/bucketing_table/table_location/
+
+CREATE EXTERNAL TABLE IF NOT EXISTS input_table(street STRING,city STRING,zip STRING,state STRING,beds STRING,baths STRING,sqft STRING,type STRING,price STRING) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' STORED AS TEXTFILE LOCATION '/user/santhoshi/hive/bucketing_table/table_location/';
+
+load data local inpath '/home/santhoshi/real_state.csv' into table input_table;
+
+CREATE TABLE bucket_table(street STRING,zip STRING,state STRING,beds STRING,baths STRING,sqft STRING,type STRING,price STRING) PARTITIONED BY(city STRING) CLUSTERED BY(street) into 4 buckets row format delimited fields terminated by ',';
+
+insert into bucket_table partition(city) select street,zip,state,beds,baths,sqft,type,price,city from input_table;
+
+
+
+

@@ -1,0 +1,5 @@
+hive udaf commands:
+
+add jar /home/santhoshi/udaf-original-hash-0.0.1-SNAPSHOT.jar;
+create temporary function max as 'hive_project_udf.hash.Max';
+SELECT max(station_id) FROM bike_data_ondata;

@@ -1,0 +1,4 @@
+ProblemStatement:
+In the cases where we don't wanna use any logic in Mapper we will use Identity Mapper and in this case we are checking the application of IdentityMapper.
+Command: 	
+hadoop jar samplejar.jar SanthoshiShetty.volume.IdentityMapReduce /user/santhoshi/SparkExample.txt /user/santhoshi/opsy/

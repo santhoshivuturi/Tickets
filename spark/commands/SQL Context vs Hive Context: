@@ -1,0 +1,9 @@
+SQL Context vs Hive Context:
+----------------------------
+When programming against Spark SQL we have two entry points depending on whether we need Hive support. The recommended entry point is the HiveContext to provide access to HiveQL and other Hive-dependent functionality. The more basic SQLContext provides a subset of the Spark SQL support that does not depend on Hive.
+
+-The separation exists for users who might have conflicts with including all of the Hive dependencies.
+
+-Additional features of HiveContext which are not found in in SQLContext include the ability to write queries using the more complete HiveQL parser, access to Hive UDFs, and the ability to read data from Hive tables.
+
+-Using a HiveContext does not require an existing Hive setup.

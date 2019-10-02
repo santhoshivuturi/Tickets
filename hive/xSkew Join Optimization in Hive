@@ -1,0 +1,30 @@
+xSkew Join Optimization in Hive
+Skew is a very common issue which most of the data engineers come across. 
+
+Overview of Skew - When in our data we have very large number of records associated with one(or more) key, then this kind of data leads to skew issue and the data is said to be skewed on that key.
+
+Problem statement -
+Assume we have a table which tracks the online visits to different websites. In this table amazon.com has 1 Billion rows whereas there are other not very popular sites (www.abc.com, www.xyz.com..etc) which in totality has 100K rows. Lets assume we have a column site_id which is unique for a website.
+Now if we join this table with some other table on site_id, then one reducer will have to process 1B records and other reducers will process the 100K rows. In this situation, it is common to see the reducers processing 100K records finishing quickly(say avg 1 minute) as compared to the reducer for amazon.com taking a really long time(say 5 hours). 
+
+Solution - 
+In hive we can address this problem by setting the following configuration settings, in the job running the join query.
+
+Configuration Settings:
+
+hive.optimize.skewjoin
+Default value = false
+To enable skew join optimization and let hive server optimize the join where there is skew. 
+We need to set it to true.
+
+hive.skewjoin.key
+Default value = 100000
+The value of this property determines which key is a skew key. During join for any particular key if the number of rows is more than this specified number, then that key is considered as a skew join key.
+
+hive.skewjoin.mapjoin.map.tasks
+Default value = 10000
+To set the number of map tasks to use in the map join job to perform the skew join. This property needs to be used in association with the hive.skewjoin.mapjoin.min.split.
+
+hive.skewjoin.mapjoin.min.split
+Default value = 33554432
+To set the minimum split size and hence calculate the maximum number of mappers to be used for the map join job for a skew join. This property should be used with hive.skewjoin.mapjoin.map.tasks for an efficient control.

@@ -1,0 +1,42 @@
+package sanmr;
+import java.io.IOException;
+
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Reducer;
+
+public class CustomPartitionerReducer extends Reducer<Text,Text,Text,Text>{
+
+	public void reduce(Text key, Iterable<Text> values, Context context)
+			throws IOException, InterruptedException {
+
+			
+		int maxMarks = 0;
+		String name1="";
+		String gender1="";
+		String age1="";
+		
+		//iterating through the values corresponding to a particular key
+		for(Text val: values){
+		
+			String [] parts2= val.toString().split("\t");
+			int marks = Integer.parseInt(parts2[2]);
+			 
+			
+		
+			   if(marks > maxMarks){
+					name1 = parts2[0];
+					age1 = parts2[1];
+					gender1 = key.toString();
+                   maxMarks = marks;
+				}
+			}
+			
+		
+		context.write(new Text(name1), new Text("age- "+age1+"\t"+gender1+"\tscore-"+maxMarks));
+		
+	}
+}
+
+
+
+

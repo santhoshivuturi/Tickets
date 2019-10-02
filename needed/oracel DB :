@@ -1,0 +1,2 @@
+oracel DB :
+mysql -u h1b_user -h ms.itversity.com -p password:itversity

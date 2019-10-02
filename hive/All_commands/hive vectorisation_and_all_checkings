@@ -1,0 +1,38 @@
+hive vectorisation:
+-- Hive vectorisation or the future in hive highly reduces the cpu usage for typical query operations like scanning filters aggregates and joins.
+-- A standared query execution engine process one query at a time. this involves long code paths and significant metadata interpretation in inner loop of execution.
+-- Where as vectorisation query execution streamline operations by processing a block of 1024 rows at a time. with in the block each column is stored as vector.
+
+Using vectorisation execution query:
+-- to use vectorisation execution very we need to store our data as ORC and should set the following variables:
+Enabling:
+set hive.vectorized.execution.enabled = true;
+Disabling:
+set hive.vectorized.execution.enabled = false;
+
+create table vectorizedtable(state string,id int) stored as orc;
+ 
+insert into vectorizedtable values('haryana',1);
+set hive.vectorized.execution.enabled = true;
+explain select count(*) from vectorizedtable;
+
+
+
+
+
+Bucketing underlying:
+In Hive Partition, each partition will be created as directory. But in Hive Buckets, each bucket will be created as file.
+
+Hive partitiong underlying:
+This will have data divided into directories depending on number of partitions.
+
+Check hive warehouse:
+hdfs://nn01.itversity.com:8020/apps/hive/warehouse/tickets_hive.db/orchetra_actual_table
+-- all the manage table and also only the external which don't have a loaction specified to be created at the time of table creation will be store into the apps/hive/warehouse/tickets_hive.db/orchetra_actual_table.
+
+Drop managetable:
+-- When we drop a manage table the underlying data will alos be dropped from the hive warehouse.
+
+Drop Externaltable:
+-- When we drop this table the data will be intact but the table will be dropped and we will no longer will be able to acess the data with the same table name.
+

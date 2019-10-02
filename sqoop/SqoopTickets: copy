@@ -1,0 +1,152 @@
+Sqoop:
+
+Entering into Itversity SQL:
+mysql -u retail_dba -h nn01.itversity.com -p
+
+------------------------
+
+Checking the Databases:
+ show databases;
+Output:
+information_schema (not for use)
+retail_db(Read Only)         
+retail_export(Can create Tables)    
+retail_import(can create tables)
+
+-----------------------------
+
+Using the desired Database:
+ use retail_import;
+
+--------------------------
+
+Creating a table:(MySQL)
+CREATE TABLE SQOOPTABLES ( DEST_COUNTRY_NAME VARCHAR(20), ORIGIN_COUNTRY_NAME VARCHAR(20),count INT);
+INSERT INTO SQOOPTABLES (DEST_COUNTRY_NAME,ORIGIN_COUNTRY_NAME,count) VALUES ("United States","Romania",1);
+
+-----------------------------
+
+SQOOP IMPORT COMMAND:
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_import --username retail_dba --password itversity --table SQOOPTABLES --m 1 --target-dir /user/santhoshi/partdir/
+
+JDBCLink:jdbc:mysql://nn01.itversity.com/
+DatabaseName:retail_import
+UserName:retail_dba
+Password:itversity
+TableName:SQOOPTABLES
+--m1:NumberOfMappers
+--target-dir:/user/santhoshi/partdir/
+
+------------------------------
+
+SQOOP EVAL COMMAND:
+sqoop eval --connect jdbc:mysql://nn01.itversity.com/retail_import  --username retail_dba  --password itversity --query "SELECT * FROM SQOOPTABLES LIMIT 3"
+
+JDBCLink:jdbc:mysql://nn01.itversity.com/
+DatabaseName:retail_import
+UserName:retail_dba
+Password:itversity
+--query:SELECT * FROM SQOOPTABLES LIMIT 3
+
+sqoop eval --connect jdbc:mysql://nn01.itversity.com/retail_import --username retail_dba --password itversity -e "INSERT INTO SQOOPTABLES VALUES('santhoshi','country',1)"
+
+JDBCLink:jdbc:mysql://nn01.itversity.com/
+DatabaseName:retail_import
+UserName:retail_dba
+Password:itversity
+-e:INSERT INTO SQOOPTABLES VALUES('santhoshi','country',1)
+
+sqoop eval --connect jdbc:mysql://nn01.itversity.com/retail_import  --username retail_dba  --password itversity --query "SELECT COUNT(*) FROM SQOOPTABLES"
+
+JDBCLink:jdbc:mysql://nn01.itversity.com/
+DatabaseName:retail_import
+UserName:retail_dba
+Password:itversity
+--query:SELECT COUNT(*) FROM SQOOPTABLES
+
+----------------------------------
+
+SQOOP EXPORT COMMAND:
+sqoop export -m1 --connect jdbc:mysql://nn01.itversity.com/retail_import --username retail_dba --password itversity --table SQOOPEXPORTTABLES --export-dir /user/santhoshi/santhoshisqoopexport
+
+-----------------------------------
+
+SQOOP INCREMENTAL APPEND:
+-- First create a table and then do the normal sqoop import command 
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_import --username retail_dba --password itversity --table SQOOPINCREMENTALTABLE --m 1 --target-dir /user/santhoshi/partwshwari/
+
+-- Then we all know that the data in the RDBMS will be increasing and we will need to take that as well but for that instead of copying all the file or rows again into HDFS and we can use incremental load with sqoop and add only the newest add rows in the table.
+-- For that we need to add some more columns manually to the table which we have created. after adding the this will only return or save the data which is newely added after 7 which is the last value we have mentioned.
+
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_import --username retail_dba --password itversity --table SQOOPINCREMENTALTABLE --m 1 --target-dir /user/santhoshi/partwshwari/ --incremental append --check-column id --last-value 7
+
+-----------------------------------
+
+SQOOP IMPORT TO HIVE:
+
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_import --username retail_dba --password itversity --table SQOOPINCREMENTALTABLE --m 1 --target-dir /user/santhoshi/vacy/ --fields-terminated-by "," --hive-import --create-hive-table --hive-table sqoop_workspace
+
+-- to import tables from a relational database into hive we will be able to do that using sqoop import using hive
+-- First we will create a table using the SQL thing and then we imort tat using the sqoop import command on to HDFS and then we will import that from the target directory on to hive and it will be imoorted and we will be able to use in the hive like we normaly do.
+
+ select * from sqoop_workspace;
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_import --username retail_dba --password itversity --table SQOOPINCREMENTALTABLE --m 1 --target-dir /user/santhoshi/vacyu/ --fields-terminated-by "," --hive-import --create-hive-table --hive-table santhoshivuturi.sqoop_workspace
+-- We did the above thing by only using the hive default database and here we are using a specific database and we are importing the table from my sql to hive using sqoop command.
+
+---------------------------------
+
+SQOOP PASSWORD FILE:
+
+echo -n "itversity" > mysql_pswd.password
+-- This is how we will create a password file instead on entering the password directly on the command line.
+-- We will create a password file and then we are gonna give that path to the password.
+-- to use that password file we need give 400 permission to the file and the file should always be in HDFS.
+
+hadoop fs -chmod 400 /user/santhoshi/sqoop_passwords/mysql_pswd.password
+-- By doing this we are giving only read rights to the file 
+
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_import --username retail_dba --password itversity --table SQOOPTABLES --m 1 --as-avrodatafile --target-dir /user/santhoshi/villian/ --hive-import --create-hive-table --hive-table sqoopie_workspace
+
+---------------------------------
+
+Reading from RDBMS and writting AVRO
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_import --username retail_dba --password itversity --table SQOOPTABLES --m 1 --as-avrodatafile --target-dir /user/santhoshi/partitionary/
+
+hadoop fs -text /user/santhoshi/partitionary/part-m-00000.avro
+-- -text is used to read a avro file.
+
+-----------------------------------
+Hive table on Avro file:
+Extracting schema from avrofile:
+java -jar /home/santhoshi/avro-tools-1.7.7.jar getschema /home/santhoshi/part-m-00000.avro  /home/santhoshi/avroforhive(in local unix which have java)
+
+mv avroforhive avroforhive.avsc
+-- Renaming the schemfile generated with .avsc
+
+putting HDFS:
+hadoop fs -put avroforhive.avsc /user/santhoshi/
+
+Creating hive table now:
+CREATE EXTERNAL TABLE avro_hive_table 
+                      ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.avro.AvroSerDe' 
+                      STORED as INPUTFORMAT 'org.apache.hadoop.hive.ql.io.avro.AvroContainerInputFormat' 
+                      OUTPUTFORMAT 'org.apache.hadoop.hive.ql.io.avro.AvroContainerOutputFormat' 
+                      LOCATION '/user/santhoshi/partitionary/' 
+                      TBLPROPERTIES ('avro.schema.url'='/user/santhoshi/avroforhive.avsc');
+--------------------------------------                      
+Overwriiting using SQOOP import:
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_import --username retail_dba --password itversity --table SQOOPTABLES --delete-target-dir --target-dir /user/santhoshi/partdir/ 
+
+-- As we don't have overwrite we delete directory and write again.
+------------------------------------------
+
+
+
+
+
+
+
+
+
+
+

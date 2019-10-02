@@ -1,0 +1,128 @@
+Create database :
+Create database Tickets_hive
+
+use database:
+use Tickets_hive
+
+
+hadoop fs -mkdir -p /user/santhoshi/hive/hive_externaltable/normal_externaltable/on_data/
+hadoop fs -put bike.txt /user/santhoshi/hive/hive_externaltable/normal_externaltable/on_data/
+Hive external table creation:
+External table on data:
+CREATE EXTERNAL TABLE IF NOT EXISTS bike_data_ondata(station_id INT, name STRING, lat DOUBLE,long DOUBLE, dockcount BIGINT,landmark STRING,installation STRING) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' STORED AS TEXTFILE LOCATION '/user/santhoshi/hive/hive_externaltable/normal_externaltable/on_data/';
+hadoop fs -mkdir -p /user/santhoshi/hive/hive_externaltable/normal_externaltable/load_data/
+hadoop fs -mkdir -p /user/santhoshi/hive/hive_externaltable/normal_externaltable/load_data_location/
+hadoop fs -put bikes.txt /user/santhoshi/hive/hive_externaltable/normal_externaltable/load_data_location/
+External table by load:
+CREATE EXTERNAL TABLE IF NOT EXISTS bike_data_loadcommand(station_id INT, name STRING, lat DOUBLE,long DOUBLE, dockcount BIGINT,landmark STRING,installation STRING) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' STORED AS TEXTFILE LOCATION '/user/santhoshi/hive/hive_externaltable/normal_externaltable/load_data/';
+load data inpath '/user/santhoshi/hive/hive_externaltable/normal_externaltable/load_data_location/' into table bike_data_loadcommand;
+
+Manage table:
+hadoop fs -mkdir -p /user/santhoshi/hive/hive_managetable/only_load_data/
+hadoop fs -put bikes.txt /user/santhoshi/hive/hive_managetable/only_load_data/
+create table bikers_data_managetable(station_id INT, name STRING, lat DOUBLE,long DOUBLE, dockcount BIGINT,landmark STRING,installation STRING) row format delimited fields terminated by ',';
+load data inpath '/user/santhoshi/hive/hive_managetable/only_load_data/' into table bikers_data_managetable ;
+
+partition table:
+
+Managed partition table inpath:
+-------------------------------
+hadoop fs -mkdir -p /user/santhoshi/hive/hive_partition_table/managed_table/from_path/
+hadoop fs -put bikes.txt /user/santhoshi/hive/hive_partition_table/managed_table/from_path/
+---
+CREATE TABLE Bike_Data_partition_managed (station_id INT, name STRING, lat DOUBLE,long DOUBLE, dockcount BIGINT,landmark STRING,installation STRING)PARTITIONED BY (country STRING);
+
+LOAD DATA INPATH '/user/santhoshi/hive/hive_partition_table/managed_table/from_path/' INTO TABLE Bike_Data_partition_managed PARTITION (country = 'US');
+DESCRIBE FORMATTED Bike_Data_partition_managed;
+
+Managed partition table from another table:
+------------------------------------------
+hadoop fs -mkdir -p /user/santhoshi/hive/hive_partition_table/managed_table/from_another_table/base_table/
+hadoop fs -put bikes.txt /user/santhoshi/hive/hive_partition_table/managed_table/from_another_table/base_table/
+----
+CREATE EXTERNAL TABLE IF NOT EXISTS bike_base_partitiontable(station_id INT, name STRING, lat DOUBLE,long DOUBLE, dockcount BIGINT,landmark STRING,installation STRING) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' STORED AS TEXTFILE LOCATION '/user/santhoshi/hive/hive_partition_table/managed_table/from_another_table/base_table/';
+
+CREATE TABLE Bike_Data_partition_managed_from_table(station_id INT, name STRING, lat DOUBLE,long DOUBLE, dockcount BIGINT,landmark STRING,installation STRING)PARTITIONED BY (country STRING);
+
+Example command:
+----------------
+INSERT OVERWRITE TABLE partitioned_user PARTITION (country = 'US', state = 'AL') SELECT * FROM another_user au WHERE au.country = 'US' AND au.state = 'AL';
+
+Original command:
+-----------------
+INSERT OVERWRITE TABLE Bike_Data_partition_managed_from_table PARTITION (country ='US') SELECT * FROM bike_base_partitiontable au WHERE au.installation = '4/9/2014';
+
+Manage partition dynamic table:
+--------------------------------
+
+CREATE TABLE Bike_Data_dynamicpartition_managed_from_table(station_id INT, name STRING, lat DOUBLE,long DOUBLE, dockcount BIGINT,landmark STRING,installation STRING)PARTITIONED BY (country STRING);
+
+hadoop fs -mkdir -p /user/santhoshi/hive/hive_partition_table/managed_table/dynamic_partition/
+hadoop fs -put bikes.txt /user/santhoshi/hive/hive_partition_table/managed_table/dynamic_partition/
+hadoop fs -mkdir -p /user/santhoshi/hive/hive_partition_table/managed_table/dynamic_partition/location/
+
+Creating a partitiontable:
+------------------
+drop table if exists Bike_Data_dynamicpartition_managed_from_table;
+CREATE TABLE Bike_Data_dynamicpartition_managed_from_table(station_id INT, name STRING, lat DOUBLE,long DOUBLE, dockcount BIGINT,installation STRING)PARTITIONED BY (landmark STRING) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' STORED AS TEXTFILE LOCATION '/user/santhoshi/hive/hive_partition_table/managed_table/dynamic_partition/location/';
+
+Loading the data into created partition table from another table:
+INSERT overwrite TABLE Bike_Data_dynamicpartition_managed_from_table PARTITION (landmark) SELECT  station_id , name , lat ,long , dockcount ,installation,landmark  FROM bike_base_partitiontable;
+
+
+External partition table inpath:
+-------------------------------
+hadoop fs -mkdir -p /user/santhoshi/hive/hive_partition_table/external_table/from_path_static/
+hadoop fs -put bikes.txt /user/santhoshi/hive/hive_partition_table/external_table/from_path_static/
+
+CREATE EXTERNAL TABLE Bike_Data_partition_External (station_id INT, name STRING, lat DOUBLE,long DOUBLE, dockcount BIGINT,landmark STRING,installation STRING)PARTITIONED BY (country STRING);
+
+LOAD DATA INPATH '/user/santhoshi/hive/hive_partition_table/external_table/from_path_static/' INTO TABLE Bike_Data_partition_External PARTITION (country = 'US');
+
+DESCRIBE FORMATTED Bike_Data_partition_External;
+
+External partition table from another table:
+--------------------------------------------
+Normal externaltable:
+-------------------
+CREATE EXTERNAL TABLE IF NOT EXISTS bike_base_partitiontable(station_id INT, name STRING, lat DOUBLE,long DOUBLE, dockcount BIGINT,landmark STRING,installation STRING) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' STORED AS TEXTFILE LOCATION '/user/santhoshi/hive/hive_partition_table/managed_table/from_another_table/base_table/';
+
+Partition externaltable:
+------------------------
+CREATE EXTERNAL TABLE Bike_Data_partition_External_from_table(station_id INT, name STRING, lat DOUBLE,long DOUBLE, dockcount BIGINT,landmark STRING,installation STRING)PARTITIONED BY (country STRING);
+
+Example command:
+----------------
+INSERT OVERWRITE TABLE Bike_Data_partition_External_from_table PARTITION (country = 'US', state = 'AL') SELECT * FROM another_user au WHERE au.country = 'US' AND au.state = 'AL';
+
+original command:
+-----------------
+INSERT OVERWRITE TABLE Bike_Data_partition_External_from_table PARTITION (country ='US') SELECT * FROM bike_base_partitiontable au WHERE au.installation = '4/9/2014';
+
+external dynamic table:
+-----------------------
+hadoop fs -mkdir -p /user/santhoshi/hive/hive_partition_table/external_table/dynamic_partition/location/
+
+creating a partition externaltable:
+------------------------------------
+CREATE EXTERNAL TABLE Bike_Data_dynamicpartition_External_from_table(station_id INT, name STRING, lat DOUBLE,long DOUBLE, dockcount BIGINT,installation STRING)PARTITIONED BY (landmark STRING) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' STORED AS TEXTFILE LOCATION '/user/santhoshi/hive/hive_partition_table/external_table/dynamic_partition/location/';
+loading from another table:
+--------------------------
+INSERT overwrite TABLE Bike_Data_dynamicpartition_External_from_table PARTITION (landmark) SELECT  station_id , name , lat ,long , dockcount ,installation,landmark  FROM bike_base_partitiontable;
+
+
+
+
+Extras:
+-------
+
+/user/santhoshi/hive/hive_partition_table/managed_table/dynamic_partition/
+LOAD DATA INPATH '/user/santhoshi/hive/hive_partition_table/managed_table/bikes_data/' INTO TABLE Bike_Data_dynamicpartition_managed_from_table PARTITION (landmark);
+
+
+hadoop fs -rm -r /user/santhoshi/hive/
+hadoop fs -mkdir -p /user/santhoshi/hive/hive_externaltable/normal_externaltable/on_data/
+hadoop fs -mkdir -p /user/santhoshi/hive/hive_externaltable/normal_externaltable/load_data/
+hadoop fs -mkdir -p /user/santhoshi/hive/hive_externaltable/normal_externaltable/load_data_location/
+hadoop fs -put bike.txt /user/santhoshi/hive/hive_externaltable/normal_externaltable/on_data/
+hadoop fs -put bikes.txt /user/santhoshi/hive/hive_externaltable/normal_externaltable/load_data_location/
